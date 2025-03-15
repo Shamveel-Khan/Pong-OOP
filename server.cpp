@@ -1,3 +1,10 @@
+// to run server: & "C:/raylib/w64devkit/bin/g++" -std=c++11 server.cpp network.cpp -o pong_server.exe -I"C:/raylib/w64devkit/x86_64-w64-mingw32/include" -I"C:/Program Files (x86)/enet/include" -L"C:/raylib/w64devkit/x86_64-w64-mingw32/lib" -L"C:/Program Files (x86)/enet/lib" -lraylib -lenet -lopengl32 -lgdi32 -lwinmm -lws2_32
+// to run client: & "C:/raylib/w64devkit/bin/g++" -std=c++11 client.cpp network.cpp -o po
+// ng_client.exe -I"C:/raylib/w64devkit/x86_64-w64-mingw32/incl
+// ude" -I"C:/Program Files (x86)/enet/include" -L"C:/raylib/w6
+// 4devkit/x86_64-w64-mingw32/lib" -L"C:/Program Files (x86)/en
+// et/lib" -lraylib -lenet -lopengl32 -lgdi32 -lwinmm -lws2_32
+
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 
