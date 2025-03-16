@@ -60,7 +60,7 @@ int networkSendState(ENetHost* host, ENetPeer* peer, float x, float y, float ser
 
 int networkReceiveState(ENetHost* host, float* x, float* y, float* serverPaddle, float* clientPaddle) {
     ENetEvent event;
-    while (enet_host_service(host, &event, 10) > 0) {
+    while (enet_host_service(host, &event, 5) > 0) {
         if (event.type == ENET_EVENT_TYPE_RECEIVE) {
             if (event.packet->dataLength == sizeof(state)) {
                 state* Sdata = (state*) event.packet->data;

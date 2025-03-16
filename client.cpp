@@ -1,14 +1,3 @@
-// to run server: & "C:/raylib/w64devkit/bin/g++" -std=c++11 server.cpp network.cpp -o pong_server.exe -I"C:/raylib/w64devkit/x86_64-w64-mingw32/include" -I"C:/Program Files (x86)/enet/include" -L"C:/raylib/w64devkit/x86_64-w64-mingw32/lib" -L"C:/Program Files (x86)/enet/lib" -lraylib -lenet -lopengl32 -lgdi32 -lwinmm -lws2_32
-// to run client: & "C:/raylib/w64devkit/bin/g++" -std=c++11 client.cpp network.cpp -o po
-// ng_client.exe -I"C:/raylib/w64devkit/x86_64-w64-mingw32/incl
-// ude" -I"C:/Program Files (x86)/enet/include" -L"C:/raylib/w6
-// 4devkit/x86_64-w64-mingw32/lib" -L"C:/Program Files (x86)/en
-// et/lib" -lraylib -lenet -lopengl32 -lgdi32 -lwinmm -lws2_32
-
-
-#define WIN32_LEAN_AND_MEAN
-#define NOMINMAX
-
 #include "raylib.h"
 #include "network.h"
 #include <stdio.h>
@@ -23,7 +12,12 @@
     #undef ShowCursor
 #endif
 
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+
 #define IS_CLIENT 1
+
+int screenHeight=600,screenWidth=600;
 
 struct state {
     float x;
@@ -44,74 +38,80 @@ class theme {
     Color background;
     Color border;
     Rectangle boundaries;
-    public:
-        theme(Color b,Color ba,Color bo,Rectangle bou) {
-            ballColor=b;
-            border=bo;
-            background=ba;
-            boundaries = bou;
-        }
-        theme(Color b,Texture2D pi,Color ba,Color bo,Rectangle bou) {
-            ballColor=b;
-            pic=pi;
-            background=ba;
-            border=bo;
-            boundaries = bou;
-        }
-        void drawBoard() {
-            ClearBackground(background);
-            DrawRectangleLinesEx(boundaries, 4, YELLOW);
-            DrawCircleLines(300, 300, 70, WHITE);
-            DrawLine(300, 0, 300, 600, WHITE);
-        }
-        Color getBallColor() {
-            return ballColor;
-        }
+    int borderWidth;
+public:
+    theme(Color b, Color ba, Color bo, Rectangle bou, int bw) {
+        ballColor = b;
+        border = bo;
+        background = ba;
+        boundaries = bou;
+        borderWidth = bw;
+    }
+    theme(Color b, Texture2D pi, Color ba, Color bo, Rectangle bou, int bw) {
+        ballColor = b;
+        pic = pi;
+        background = ba;
+        border = bo;
+        boundaries = bou;
+        borderWidth = bw;
+    }
+    void drawBoard() {
+        ClearBackground(background);
+        DrawRectangleLinesEx(boundaries, borderWidth, YELLOW);
+        DrawCircleLines(boundaries.width/2, boundaries.height/2, 70, WHITE);
+        DrawLine(screenWidth/2, 0, screenWidth/2, screenHeight, WHITE);
+    }
+    int getBorderWidth() {
+        return borderWidth;
+    }
+    Color getBallColor() {
+        return ballColor;
+    }
 };
 
-class paddle{
+class paddle {
     int height;
     int width;
     int positionX;
     int positionY;
     Texture2D skin;
     Color color;
-    public:
-        paddle(int x,int y,Texture2D skin,Color c,int h,int w) {
-            this->skin=skin;
-            positionX=x;
-            positionY=y;
-            color=c;
-            height=h;
-            width=w;
+public:
+    paddle(int x, int y, Texture2D skin, Color c, int h, int w) {
+        this->skin = skin;
+        positionX = x;
+        positionY = y;
+        color = c;
+        height = h;
+        width = w;
+    }
+    paddle(int x, int y, Color c, int h, int w) {
+        positionX = x;
+        positionY = y;
+        color = c;
+        height = h;
+        width = w;
+    }
+    void setPositionY(int y) {
+        positionY = y;
+    }
+    int getPositionY() {
+        return positionY;
+    }
+    void drawPaddle() {
+        DrawRectangle(positionX, positionY, width, height, color);
+    }
+    void update() {
+        if(positionX == 570) {
+            if(IsKeyDown(KEY_W)) positionY -= 5;
+            if(IsKeyDown(KEY_S)) positionY += 5;
+            positionY = Clamp(positionY, 0.0f, 500.0f);
         }
-        paddle(int x,int y,Color c,int h,int w) {
-            positionX=x;
-            positionY=y;
-            color=c;
-            height=h;
-            width=w;
-        }
-        void setPositionY(int y) {
-            positionY=y;
-        }
-        int getPositionY() {
-            return positionY;
-        }
-        void drawPaddle() {
-            DrawRectangle(positionX, positionY, width, height, color);
-        }
-        void update() {
-            if(positionX==570) {
-                if(IsKeyDown(KEY_W)) positionY -= 5;
-                if(IsKeyDown(KEY_S)) positionY += 5;
-                positionY = Clamp(positionY, 0.0f, 500.0f);
-            }
-        }
-        Rectangle getRec() {
-            Rectangle r={(float)positionX,(float)positionY,(float)width,(float)height};
-            return r;
-        }
+    }
+    Rectangle getRec() {
+        Rectangle r = {(float)positionX, (float)positionY, (float)width, (float)height};
+        return r;
+    }
 };
 
 class ball {
@@ -122,83 +122,106 @@ class ball {
     int ballSpeedY;
     Color color;
     Texture2D skin;
-    public:
-        ball(int x,int y,int r,Color c,Texture2D t,int speedX,int speedY) {
-            positionX=x;
-            positionY=y;
-            radius=r;
-            color=c;
-            skin=t;
-            ballSpeedX=speedX;
-            ballSpeedY=speedY;
-        }
-        ball(int x,int y,int r,Color c,int speedX,int speedY) {
-            positionX=x;
-            positionY=y;
-            radius=r;
-            color=c;
-            ballSpeedX=speedX;
-            ballSpeedY=speedY;
-        }
-        void drawBall() {
-            DrawCircle(positionX, positionY, radius, color);
-        }
-        void setPositionX(int x) {
-            positionX=x;
-        }
-        void setPositionY(int y) {
-            positionY=y;
-        }
-        int getPositionX() {
-            return positionX;
-        }
-        int getPositionY() {
-            return positionY;
-        }
-        void update(Rectangle leftRec,Rectangle rightRec) {
-            if(positionX+radius >= 600 || positionX-radius <= 0) ballSpeedX *= -1;
-            if(positionY+radius >= 600 || positionY-radius <= 0) ballSpeedY *= -1;
-
-            if(CheckCollisionCircleRec((Vector2){(float)positionX, (float)positionY}, radius, leftRec) ||
-                CheckCollisionCircleRec((Vector2){(float)positionX, (float)positionY}, radius, rightRec)) {
+public:
+    ball(int x, int y, int r, Color c, Texture2D t, int speedX, int speedY) {
+        positionX = x;
+        positionY = y;
+        radius = r;
+        color = c;
+        skin = t;
+        ballSpeedX = speedX;
+        ballSpeedY = speedY;
+    }
+    ball(int x, int y, int r, Color c, int speedX, int speedY) {
+        positionX = x;
+        positionY = y;
+        radius = r;
+        color = c;
+        ballSpeedX = speedX;
+        ballSpeedY = speedY;
+    }
+    void drawBall() {
+        DrawCircle(positionX, positionY, radius, color);
+    }
+    void setPositionX(int x) {
+        positionX = x;
+    }
+    void setPositionY(int y) {
+        positionY = y;
+    }
+    int getPositionX() {
+        return positionX;
+    }
+    int getPositionY() {
+        return positionY;
+    }
+    void update(Rectangle leftRec, Rectangle rightRec) {
+        if(positionX + radius >= screenWidth || positionX - radius <= 0) ballSpeedX *= -1;
+        if(positionY + radius >= screenHeight || positionY - radius <= 0) ballSpeedY *= -1;
+        if(CheckCollisionCircleRec((Vector2){(float)positionX, (float)positionY}, radius, leftRec) ||
+           CheckCollisionCircleRec((Vector2){(float)positionX, (float)positionY}, radius, rightRec)) {
             ballSpeedX *= -1;
-            }
-
-            positionX += ballSpeedX;
-            positionY += ballSpeedY;
         }
+        positionX += ballSpeedX;
+        positionY += ballSpeedY;
+    }
 };
 
+
 int main(void) {
-    Color background={50, 168, 82,255};
-    Rectangle border= {0,0,600,600};
-    theme classic(RED,background,YELLOW,border);
-    paddle left(10,300,WHITE,100,20);
-    paddle right(570,300,WHITE,100,20);
-    ball gameBall(300,300,20,classic.getBallColor(),7,5);
+    Color background = {50, 168, 82, 255};
+    Rectangle border = {0, 0, (float)screenWidth, (float)screenHeight};
+    theme classic(RED, background, YELLOW, border, 5);
+    paddle left(classic.getBorderWidth()+5, screenHeight/2, WHITE, 100, 20);
+    paddle right(screenWidth-classic.getBorderWidth()-25, screenHeight/2, WHITE, 100, 20);
+    ball gameBall(screenWidth/2, screenHeight/2, 20, classic.getBallColor(), 7, 5);
 
     ENetHost* host = NULL;
     ENetPeer* peer = NULL;
     
-    if(networkInitialize(MODE_CLIENT, "192.168.153.197", &host, &peer) != 0) {
+    if(networkInitialize(MODE_CLIENT, "192.168.119.197", &host, &peer) != 0) {
         printf("Failed to initialize network\n");
         return 1;
     }
 
-    InitWindow(600, 600, "Client - Multiplayer Pong");
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
+    InitWindow(screenWidth, screenHeight, "Client - Multiplayer Pong");
     SetTargetFPS(60);
     
-    state ballState = {300,300,300,300};
+    state ballState = {(float)screenWidth/2, (float)screenHeight/2, (float)screenHeight/2, (float)screenHeight/2};
 
-    while(!WindowShouldClose()) {        
+    while(!WindowShouldClose()) {
+        
+        // RESPONSIVE CODE: Handle window resize (same as server)
+        if (IsWindowResized()) {
+            int oldSW = screenWidth;
+            int oldSH = screenHeight;
+            screenWidth = GetScreenWidth();
+            screenHeight = GetScreenHeight();
+
+            left = paddle(classic.getBorderWidth()+5, screenHeight/2 - (int)(screenHeight * 0.165f / 2), WHITE,
+                          (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f));
+            right = paddle(screenWidth - 30, screenHeight/2 - (int)(screenHeight * 0.165f / 2), WHITE,
+                           (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f));
+
+            float newBallX = ballState.x * ((float)screenWidth / oldSW);
+            float newBallY = ballState.y * ((float)screenHeight / oldSH);
+            int newBallRadius = (int)(screenWidth * 0.02f);
+            gameBall = ball((int)newBallX, (int)newBallY, newBallRadius, classic.getBallColor(),
+                            (int)(screenWidth * 0.007f), (int)(screenHeight * 0.005f));
+
+            border = {0, 0, (float)screenWidth, (float)screenHeight};
+            classic = theme(RED, background, YELLOW, border, 5);
+        }
+        
         networkSendState(host, peer, 0, 0, 0, right.getPositionY());
 
         float dummy;
         networkReceiveState(host, &ballState.x, &ballState.y, &ballState.p1, &dummy);
         left.setPositionY(ballState.p1);
         right.update();
-        gameBall.setPositionX(ballState.x);
-        gameBall.setPositionY(ballState.y);
+        gameBall.setPositionX((int)ballState.x);
+        gameBall.setPositionY((int)ballState.y);
         
         BeginDrawing();
             classic.drawBoard();
