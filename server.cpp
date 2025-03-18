@@ -2,6 +2,7 @@
 #include "network.h"
 #include <stdio.h>
 #include <math.h>    
+#include <ctime>
 
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
@@ -27,12 +28,11 @@ float Clamp(float value, float min, float max) {
 }
 
 bool checkPause(bool isHover,Color* buttonColor) {
-    
     if(isHover) {
         *buttonColor = DARKGRAY;
     }
     else {
-        *buttonColor = GRAY;
+        *buttonColor = WHITE;
     }
     if(isHover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
         isPaused=!isPaused;
@@ -40,17 +40,27 @@ bool checkPause(bool isHover,Color* buttonColor) {
     return isPaused;
 } 
 
-void showPausedScreen() {
-    Rectangle button = {570,10,20,40};
-    Color buttonColor = WHITE;
-    bool isHover = CheckCollisionPointRec(GetMousePosition(),button);
-    isPaused = checkPause(isHover,&buttonColor);
-    BeginDrawing();
-    ClearBackground(BLACK);
-    DrawRectangleRec(button,buttonColor);
-    DrawText("PAUSED!!",screenWidth/2,screenHeight/2,20,WHITE);
-    EndDrawing();
-}
+class scoreBoard {
+    int scoreLeft;
+    int scoreRight;
+    Color scoreColor;
+    public:
+        scoreBoard(Color c1) {
+            scoreLeft=0;
+            scoreRight=0;
+            scoreColor=c1;
+        }
+        void drawBoard() {
+            DrawText(TextFormat("%d", scoreRight),screenWidth/4,0.066*screenHeight,0.055*screenWidth,scoreColor);
+            DrawText(TextFormat("%d", scoreLeft),screenWidth*0.75,0.066*screenHeight,0.055*screenWidth,scoreColor);
+        }
+        int* getScore1() {
+            return &scoreLeft;
+        }
+        int* getScore2() {
+            return &scoreRight;
+        }
+};
 
 class theme {
     Color ballColor;
@@ -178,9 +188,19 @@ public:
     int getRadius() {
         return radius;
     }
-    void update(Rectangle leftRec, Rectangle rightRec) {
-        if (positionX + radius >= screenWidth || positionX - radius <= 0) ballSpeedX *= -1;
-        if (positionY + radius >= screenHeight+25 || positionY - radius <= 25) ballSpeedY *= -1;
+    void update(Rectangle leftRec, Rectangle rightRec,int* score1,int* score2) {
+        if (positionX + radius >= screenWidth || positionX - radius <= 0) {
+            ballSpeedX*=-1;
+            if(positionX+radius>=screenWidth) {
+                (*score2)++;
+            }
+            else {
+                (*score1)++;
+            }
+        }
+        if (positionY + radius >= screenHeight+25 || positionY - radius <= 25){
+            ballSpeedY *= -1;
+        } 
         if (CheckCollisionCircleRec((Vector2){(float)positionX, (float)positionY}, radius, leftRec) ||
             CheckCollisionCircleRec((Vector2){(float)positionX, (float)positionY}, radius, rightRec)) {
             ballSpeedX *= -1;
@@ -199,11 +219,13 @@ struct state {
 
 int main(void) {
     int oldSW=600,oldSH=600;
+    int score1=0;int score2=0;
     Color background = {50, 168, 82, 255};
     Rectangle border = {0, 25, (float)screenWidth, (float)screenHeight};
     theme classic(RED, background, YELLOW, border, 5);
     paddle left(10, screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE, (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f));
     paddle right(screenWidth - 30, screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE, (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f));
+    scoreBoard score(WHITE);
 
     ball gameBall(oldSW/2, oldSH/2, (int)(screenWidth * 0.02f), classic.getBallColor(), (int)(screenWidth * 0.007f), (int)(screenHeight * 0.005f));    
     state sts;
@@ -252,6 +274,11 @@ int main(void) {
             border = {0, 25, (float)screenWidth, (float)screenHeight};
             classic = theme(RED, background, YELLOW, border, 5);
         }
+        time_t now = time(0);
+        struct tm *localTime = localtime(&now);
+        char buffer[10];
+        strftime(buffer, sizeof(buffer), "%H:%M", localTime);
+
         Vector2 pos = GetMousePosition();
         bool isHover = CheckCollisionPointRec(pos,button);
         isPaused = checkPause(isHover,&buttonColor);
@@ -266,7 +293,7 @@ int main(void) {
         networkReceiveState(host, &dummy.x, &dummy.y, &dummy.p1, &dummy.p2);
         if((int)dummy.p2 != 0) right.setPositionY((int)dummy.p2);
         else right.setPositionY(25);
-        gameBall.update(left.getRec(), right.getRec());
+        gameBall.update(left.getRec(), right.getRec(),score.getScore1(),score.getScore2());
         left.update();
         right.update();
         
@@ -275,18 +302,21 @@ int main(void) {
 
         BeginDrawing();
             DrawRectangle(0,0,screenWidth,25,BLACK);
+            DrawText(TextFormat("Current Time: %s", buffer), 10, 5, 20, WHITE);
+            score.drawBoard();
             classic.drawBoard(screenWidth, screenHeight);
             left.drawPaddle();
             right.drawPaddle();
             gameBall.drawBall();
             DrawRectangleRec(button,buttonColor);
+            DrawText("Pause", screenWidth - 65, 5, 15, WHITE);
         EndDrawing();
-
         }
         else {
             BeginDrawing();
             ClearBackground(BLACK);
             DrawRectangleRec(button,buttonColor);
+            DrawText("Resume", screenWidth - 65, 5, 13, WHITE);
             DrawText("PAUSED!!",screenWidth/2,screenHeight/2,20,WHITE);
             EndDrawing();
         }
