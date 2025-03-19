@@ -160,6 +160,12 @@ public:
     void setPositionY(int y) {
         positionY = y;
     }
+    int getBallSpeedX() {
+        return ballSpeedX;
+    }
+    int getBallSpeedY() {
+        return ballSpeedY;
+    }
     int getPositionX() {
         return positionX;
     }
@@ -191,7 +197,6 @@ public:
 int main(void) {
     int oldSW = screenWidth, oldSH = screenHeight;
     state ballState = {(float)screenWidth/2, (float)screenHeight/2, (float)screenHeight/2, (float)screenHeight/2};
-    scoreBoard score(WHITE);
 
     Color background = {50, 168, 82, 255};
     Rectangle border = {0, 25, (float)screenWidth, (float)screenHeight}; // Play area starts at Y=25
@@ -226,6 +231,8 @@ int main(void) {
             oldSH = screenHeight;
             screenWidth = GetScreenWidth();
             screenHeight = GetScreenHeight() - 30; // Adjust for top bar
+            int signSpeedX= (gameBall.getBallSpeedX() < 0)? -1 : 1;
+            int signSpeedY= (gameBall.getBallSpeedY() < 0)? -1 : 1;
 
             left = paddle(classic.getBorderWidth()+5, screenHeight/2 - (int)(screenHeight * 0.165f / 2), WHITE,
                           (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f));
@@ -236,7 +243,7 @@ int main(void) {
             float newBallY = ballState.y * ((float)screenHeight / oldSH);
             int newBallRadius = (int)(screenWidth * 0.02f);
             gameBall = ball((int)newBallX, (int)newBallY, newBallRadius, classic.getBallColor(),
-                            (int)(screenWidth * 0.007f), (int)(screenHeight * 0.005f));
+                            (int)(signSpeedX * screenWidth * 0.007f), (int)(signSpeedY * screenHeight * 0.005f));
 
             border = {0, 25, (float)screenWidth, (float)screenHeight};
             classic = theme(RED, background, YELLOW, border, 5);
@@ -278,6 +285,7 @@ int main(void) {
                 ClearBackground(BLACK);
                 DrawRectangleRec(button, buttonColor);
                 DrawText("PAUSED!!", screenWidth/2, (screenHeight + 30)/2, 20, WHITE); // Center in window
+                DrawText("Resume", screenWidth - 65, 5, 13, WHITE);
             EndDrawing();
         }
     }

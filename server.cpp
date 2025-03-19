@@ -185,6 +185,12 @@ public:
     int getPositionY() {
         return positionY;
     }
+    int getBallSpeedX() {
+        return ballSpeedX;
+    }
+    int getBallSpeedY() {
+        return ballSpeedY;
+    }
     int getRadius() {
         return radius;
     }
@@ -255,6 +261,8 @@ int main(void) {
             screenWidth = GetScreenWidth();
             screenHeight = GetScreenHeight()-30;
             button = {(float)screenWidth-70,5,60,15};
+            int signSpeedX= (gameBall.getBallSpeedX() < 0)? -1 : 1;
+            int signSpeedY= (gameBall.getBallSpeedY() < 0)? -1 : 1;
 
             left = paddle(10, screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE, (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f));
             right = paddle(screenWidth - 30, screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE, (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f));
@@ -262,7 +270,7 @@ int main(void) {
             float newBallX = sts.x * ((float)screenWidth / oldSW);
             float newBallY = sts.y * ((float)screenHeight / oldSH);
             int newBallRadius = (int)(screenWidth * 0.02f);
-            gameBall = ball((int)newBallX, (int)newBallY, newBallRadius, classic.getBallColor(), (int)(screenWidth * 0.007f), (int)(screenHeight * 0.005f));
+            gameBall = ball((int)newBallX, (int)newBallY, newBallRadius, classic.getBallColor(), (int)(signSpeedX * screenWidth * 0.007f), (int)(signSpeedY * screenHeight * 0.005f));
 
             // Clamp ball position within the new screen bounds.
             if (gameBall.getPositionX() < newBallRadius) gameBall.setPositionX(newBallRadius);
