@@ -213,7 +213,7 @@ int main(void) {
 
     ENetHost* host = NULL;
     ENetPeer* peer = NULL;
-    if(networkInitialize(MODE_CLIENT, "192.168.45.197", &host, &peer) != 0) {
+    if(networkInitialize(MODE_CLIENT, "192.168.251.197", &host, &peer) != 0) {
         printf("Failed to initialize network\n");
         return 1;
     }
