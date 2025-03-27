@@ -223,6 +223,11 @@ struct state {
     float p2; 
 };
 
+struct size {
+    int height;
+    int width;
+};
+
 int main(void) {
     int oldSW=600,oldSH=600;
     int score1=0;int score2=0;
@@ -239,7 +244,9 @@ int main(void) {
 
     ENetHost* host = NULL;
     ENetPeer* peer = NULL;
-    networkInitialize(MODE_SERVER, NULL, &host, &peer);
+    size serverScreen;
+    size clientScreen;
+    networkInitialize(MODE_SERVER, NULL, &host, &peer,&serverScreen.height,&serverScreen.width,&clientScreen.height,&clientScreen.width);
 
     sts.x = gameBall.getPositionX();
     sts.y = gameBall.getPositionY();

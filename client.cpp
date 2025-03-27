@@ -28,6 +28,11 @@ struct state {
     float p1; 
 };
 
+struct size {
+    int height;
+    int width;
+};
+
 float Clamp(float value, float min, float max) {
     return (value < min) ? min : (value > max) ? max : value;
 }
@@ -213,7 +218,9 @@ int main(void) {
 
     ENetHost* host = NULL;
     ENetPeer* peer = NULL;
-    if(networkInitialize(MODE_CLIENT, "192.168.251.197", &host, &peer) != 0) {
+    size serverScreen;
+    size clientScreen;
+    if(networkInitialize(MODE_CLIENT, "192.168.251.197", &host, &peer,&serverScreen.height,&serverScreen.width,&clientScreen.height,&clientScreen.width)!= 0) {
         printf("Failed to initialize network\n");
         return 1;
     }
