@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <math.h>
 #include <ctime>
+#include <iostream>
+using namespace std;
 
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
@@ -17,7 +19,7 @@
 #undef ShowCursor
 #endif
 
-int screenWidth = 600;
+int screenWidth = 700;
 int screenHeight = 570;
 bool isPaused = false;
 
@@ -43,6 +45,12 @@ bool checkPause(bool isHover, Color *buttonColor)
     if (isHover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
     {
         isPaused = !isPaused;
+        if(isPaused) {
+            SetWindowState(FLAG_WINDOW_RESIZABLE);
+        }
+        else {
+            ClearWindowState(FLAG_WINDOW_RESIZABLE);
+        }
     }
     return isPaused;
 }
@@ -298,8 +306,8 @@ int main(void)
 
     ENetHost *host = NULL;
     ENetPeer *peer = NULL;
-    size serverScreen;
-    size clientScreen;
+    size serverScreen = {screenHeight, screenWidth}; 
+    size clientScreen = {1, 1};
     networkInitialize(MODE_SERVER, NULL, &host, &peer, &serverScreen.height, &serverScreen.width, &clientScreen.height, &clientScreen.width);
 
     sts.x = gameBall.getPositionX();
@@ -309,14 +317,12 @@ int main(void)
 
     Rectangle button = {(float)screenWidth - 70, 5, 60, 15};
 
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(screenWidth, screenHeight + 30, "Server - Multiplayer Pong");
     SetTargetFPS(60);
     Color buttonColor = WHITE;
 
     while (!WindowShouldClose())
     {
-
         if (IsWindowResized())
         {
             int oldSW = screenWidth;
@@ -359,6 +365,8 @@ int main(void)
         isPaused = checkPause(isHover, &buttonColor);
         if (!isPaused)
         {
+            float aspectRatioH=clientScreen.height/serverScreen.height;
+            float aspectRatioW=clientScreen.width/serverScreen.width;
             // Update current state (used for networking position scaling).
             sts.x = gameBall.getPositionX();
             sts.y = gameBall.getPositionY();
@@ -375,9 +383,11 @@ int main(void)
             left.update();
             right.update();
 
-            networkSendState(host, NULL, gameBall.getPositionX(), gameBall.getPositionY(),
-                             left.getPositionY(), right.getPositionY());
+            networkSendState(host, NULL, gameBall.getPositionX()*aspectRatioW, 
+            gameBall.getPositionY()*aspectRatioH,left.getPositionY()*aspectRatioH,
+            right.getPositionY());
 
+            cout<<"the value is: "<<gameBall.getPositionX()*aspectRatioW<<endl;
             BeginDrawing();
             DrawRectangle(0, 0, screenWidth, 25, BLACK);
             DrawText(TextFormat("Current Time: %s", buffer), 10, 5, 20, WHITE);

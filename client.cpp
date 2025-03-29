@@ -54,6 +54,12 @@ bool checkPause(bool isHover, Color *buttonColor)
     if (isHover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
     {
         isPaused = !isPaused;
+        if(isPaused) {
+            SetWindowState(FLAG_WINDOW_RESIZABLE);
+        }
+        else {
+            ClearWindowState(FLAG_WINDOW_RESIZABLE);
+        }
     }
     return isPaused;
 }
@@ -263,15 +269,14 @@ int main(void)
 
     ENetHost *host = NULL;
     ENetPeer *peer = NULL;
-    size serverScreen;
-    size clientScreen;
-    if (networkInitialize(MODE_CLIENT, "192.168.251.197", &host, &peer, &serverScreen.height, &serverScreen.width, &clientScreen.height, &clientScreen.width) != 0)
+    size serverScreen={1,1};
+    size clientScreen={screenHeight,screenWidth};
+    if (networkInitialize(MODE_CLIENT, "192.168.162.197", &host, &peer, &serverScreen.height, &serverScreen.width, &clientScreen.height, &clientScreen.width) != 0)
     {
         printf("Failed to initialize network\n");
         return 1;
     }
 
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(screenWidth, screenHeight + 30, "Client - Multiplayer Pong"); // Include top bar
     SetTargetFPS(60);
 
@@ -311,8 +316,9 @@ int main(void)
         isPaused = checkPause(isHover, &buttonColor);
 
         if (!isPaused)
-        {
-            networkSendState(host, peer, 0, 0, 0, right.getPositionY());
+        {    
+            float aspectRatioH=serverScreen.height/clientScreen.height;
+            networkSendState(host, peer, 0, 0, 0, right.getPositionY()*aspectRatioH);
 
             float dummy;
             networkReceiveState(host, &ballState.x, &ballState.y, &ballState.p1, &dummy);
