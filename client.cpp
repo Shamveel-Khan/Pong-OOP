@@ -2,6 +2,8 @@
 #include "network.h"
 #include <stdio.h>
 #include <ctime>
+#include <iostream>
+using namespace std;
 
 #ifdef DrawText
 #undef DrawText
@@ -54,10 +56,12 @@ bool checkPause(bool isHover, Color *buttonColor)
     if (isHover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
     {
         isPaused = !isPaused;
-        if(isPaused) {
+        if (isPaused)
+        {
             SetWindowState(FLAG_WINDOW_RESIZABLE);
         }
-        else {
+        else
+        {
             ClearWindowState(FLAG_WINDOW_RESIZABLE);
         }
     }
@@ -263,15 +267,15 @@ int main(void)
     paddle right(screenWidth - 10 - (int)(screenWidth * 0.02f), screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE,
                  (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f));
 
-    ball gameBall((int)(ballState.x * ((float)screenWidth / oldSW)), (int)(ballState.y * ((float)screenHeight / oldSH)),
-                  (int)(screenWidth * 0.02f), classic.getBallColor(),
-                  (int)(screenWidth * 0.007f), (int)(screenHeight * 0.005f));
+    ball gameBall((ballState.x * ((float)screenWidth / oldSW)), (ballState.y * ((float)screenHeight / oldSH)),
+                  (screenWidth * 0.02f), classic.getBallColor(),
+                  (screenWidth * 0.007f), (screenHeight * 0.005f));
 
     ENetHost *host = NULL;
     ENetPeer *peer = NULL;
-    size serverScreen={1,1};
-    size clientScreen={screenHeight,screenWidth};
-    if (networkInitialize(MODE_CLIENT, "192.168.162.197", &host, &peer, &serverScreen.height, &serverScreen.width, &clientScreen.height, &clientScreen.width) != 0)
+    size serverScreen = {1, 1};
+    size clientScreen = {screenHeight, screenWidth};
+    if (networkInitialize(MODE_CLIENT, "192.168.160.197", &host, &peer, &serverScreen.height, &serverScreen.width, &clientScreen.height, &clientScreen.width) != 0)
     {
         printf("Failed to initialize network\n");
         return 1;
@@ -316,16 +320,17 @@ int main(void)
         isPaused = checkPause(isHover, &buttonColor);
 
         if (!isPaused)
-        {    
-            float aspectRatioH=serverScreen.height/clientScreen.height;
-            networkSendState(host, peer, 0, 0, 0, right.getPositionY()*aspectRatioH);
+        {
+            float aspectRatioH = serverScreen.height / clientScreen.height;
+            networkSendState(host, peer, 0, 0, 0, right.getPositionY() * aspectRatioH);
 
             float dummy;
             networkReceiveState(host, &ballState.x, &ballState.y, &ballState.p1, &dummy);
+
             left.setPositionY(ballState.p1);
             right.update();
-            gameBall.setPositionX((int)ballState.x);
-            gameBall.setPositionY((int)ballState.y);
+            gameBall.setPositionX(ballState.x);
+            gameBall.setPositionY(ballState.y);
 
             BeginDrawing();
             classic.drawBoard();

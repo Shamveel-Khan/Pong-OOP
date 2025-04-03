@@ -45,10 +45,12 @@ bool checkPause(bool isHover, Color *buttonColor)
     if (isHover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
     {
         isPaused = !isPaused;
-        if(isPaused) {
+        if (isPaused)
+        {
             SetWindowState(FLAG_WINDOW_RESIZABLE);
         }
-        else {
+        else
+        {
             ClearWindowState(FLAG_WINDOW_RESIZABLE);
         }
     }
@@ -300,16 +302,17 @@ int main(void)
     paddle right(screenWidth - 30, screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE, (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f));
     scoreBoard score(WHITE);
 
-    ball gameBall(oldSW / 2, oldSH / 2, (int)(screenWidth * 0.02f), classic.getBallColor(), (int)(screenWidth * 0.007f), (int)(screenHeight * 0.005f));
+    ball gameBall(oldSW / 2, oldSH / 2, (screenWidth * 0.02f), classic.getBallColor(), (screenWidth * 0.007f), (screenHeight * 0.005f));
     state sts;
     state dummy = {0, 0, 0, 0};
 
     ENetHost *host = NULL;
     ENetPeer *peer = NULL;
-    size serverScreen = {screenHeight, screenWidth}; 
+    size serverScreen = {screenHeight, screenWidth};
     size clientScreen = {1, 1};
     networkInitialize(MODE_SERVER, NULL, &host, &peer, &serverScreen.height, &serverScreen.width, &clientScreen.height, &clientScreen.width);
-
+    float aspectRatioH = (float)clientScreen.height / serverScreen.height;
+    float aspectRatioW = (float)clientScreen.width / serverScreen.width;
     sts.x = gameBall.getPositionX();
     sts.y = gameBall.getPositionY();
     sts.p1 = left.getPositionY();
@@ -365,8 +368,8 @@ int main(void)
         isPaused = checkPause(isHover, &buttonColor);
         if (!isPaused)
         {
-            float aspectRatioH=clientScreen.height/serverScreen.height;
-            float aspectRatioW=clientScreen.width/serverScreen.width;
+            float aspectRatioH = (float)clientScreen.height / serverScreen.height;
+            float aspectRatioW = (float)clientScreen.width / serverScreen.width;
             // Update current state (used for networking position scaling).
             sts.x = gameBall.getPositionX();
             sts.y = gameBall.getPositionY();
@@ -383,11 +386,9 @@ int main(void)
             left.update();
             right.update();
 
-            networkSendState(host, NULL, gameBall.getPositionX()*aspectRatioW, 
-            gameBall.getPositionY()*aspectRatioH,left.getPositionY()*aspectRatioH,
-            right.getPositionY());
+            networkSendState(host, NULL, (float)gameBall.getPositionX() * aspectRatioW,
+                             (float)gameBall.getPositionY() * aspectRatioH, (float)left.getPositionY() * aspectRatioH, (float)right.getPositionY());
 
-            cout<<"the value is: "<<gameBall.getPositionX()*aspectRatioW<<endl;
             BeginDrawing();
             DrawRectangle(0, 0, screenWidth, 25, BLACK);
             DrawText(TextFormat("Current Time: %s", buffer), 10, 5, 20, WHITE);
