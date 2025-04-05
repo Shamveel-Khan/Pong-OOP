@@ -31,16 +31,10 @@ struct state
     float p1;
 };
 
-struct size
-{
-    int height;
-    int width;
-};
-
 float Clamp(float value, float min, float max)
 {
     return (value < min) ? min : (value > max) ? max
-                                               : value;
+                                            : value;
 }
 
 bool checkPause(bool isHover, Color *buttonColor)
@@ -273,9 +267,7 @@ int main(void)
 
     ENetHost *host = NULL;
     ENetPeer *peer = NULL;
-    size serverScreen = {1, 1};
-    size clientScreen = {screenHeight, screenWidth};
-    if (networkInitialize(MODE_CLIENT, "192.168.160.197", &host, &peer, &serverScreen.height, &serverScreen.width, &clientScreen.height, &clientScreen.width) != 0)
+    if (networkInitialize(MODE_CLIENT, "192.168.179.197", &host, &peer) != 0)
     {
         printf("Failed to initialize network\n");
         return 1;
@@ -321,12 +313,13 @@ int main(void)
 
         if (!isPaused)
         {
-            float aspectRatioH = serverScreen.height / clientScreen.height;
-            networkSendState(host, peer, 0, 0, 0, right.getPositionY() * aspectRatioH);
+            networkSendState(host, peer, 0, 0, 0, right.getPositionY() / screenHeight);
 
             float dummy;
             networkReceiveState(host, &ballState.x, &ballState.y, &ballState.p1, &dummy);
-
+            ballState.x *= screenWidth;
+            ballState.y *= screenHeight;
+            ballState.p1 *= screenHeight;
             left.setPositionY(ballState.p1);
             right.update();
             gameBall.setPositionX(ballState.x);

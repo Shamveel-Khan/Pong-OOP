@@ -24,7 +24,7 @@ extern "C"
 #endif
 
     // One-to-one wrapper function declarations (camelCase wrappers)
-    int networkInitialize(NetworkMode mode, const char *address, ENetHost **host, ENetPeer **peer, int *sh1, int *sw1, int *sh2, int *sw2);
+    int networkInitialize(NetworkMode mode, const char *address, ENetHost **host, ENetPeer **peer);
     void networkShutdown(ENetHost *host);
     int networkSendState(ENetHost *host, ENetPeer *peer, float x, float y, float serverPaddle, float clientPaddle);
     int networkReceiveState(ENetHost *host, float *x, float *y, float *serverPaddle, float *clientPaddle);

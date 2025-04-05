@@ -284,12 +284,6 @@ struct state
     float p2;
 };
 
-struct size
-{
-    int height;
-    int width;
-};
-
 int main(void)
 {
     int oldSW = 600, oldSH = 600;
@@ -308,11 +302,7 @@ int main(void)
 
     ENetHost *host = NULL;
     ENetPeer *peer = NULL;
-    size serverScreen = {screenHeight, screenWidth};
-    size clientScreen = {1, 1};
-    networkInitialize(MODE_SERVER, NULL, &host, &peer, &serverScreen.height, &serverScreen.width, &clientScreen.height, &clientScreen.width);
-    float aspectRatioH = (float)clientScreen.height / serverScreen.height;
-    float aspectRatioW = (float)clientScreen.width / serverScreen.width;
+    networkInitialize(MODE_SERVER, NULL, &host, &peer);
     sts.x = gameBall.getPositionX();
     sts.y = gameBall.getPositionY();
     sts.p1 = left.getPositionY();
@@ -368,8 +358,6 @@ int main(void)
         isPaused = checkPause(isHover, &buttonColor);
         if (!isPaused)
         {
-            float aspectRatioH = (float)clientScreen.height / serverScreen.height;
-            float aspectRatioW = (float)clientScreen.width / serverScreen.width;
             // Update current state (used for networking position scaling).
             sts.x = gameBall.getPositionX();
             sts.y = gameBall.getPositionY();
@@ -378,6 +366,7 @@ int main(void)
 
             networkProcessEvents(host);
             networkReceiveState(host, &dummy.x, &dummy.y, &dummy.p1, &dummy.p2);
+            dummy.p1 *= screenHeight;
             if ((int)dummy.p2 != 0)
                 right.setPositionY((int)dummy.p2);
             else
@@ -386,8 +375,8 @@ int main(void)
             left.update();
             right.update();
 
-            networkSendState(host, NULL, (float)gameBall.getPositionX() * aspectRatioW,
-                             (float)gameBall.getPositionY() * aspectRatioH, (float)left.getPositionY() * aspectRatioH, (float)right.getPositionY());
+            networkSendState(host, NULL, (float)gameBall.getPositionX() /screenWidth,
+                            (float)gameBall.getPositionY() /screenHeight, (float)left.getPositionY() /screenHeight, (float)right.getPositionY());
 
             BeginDrawing();
             DrawRectangle(0, 0, screenWidth, 25, BLACK);

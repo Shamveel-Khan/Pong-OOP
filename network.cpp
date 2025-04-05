@@ -21,7 +21,7 @@ typedef struct
     int width;
 } size;
 
-int networkInitialize(NetworkMode mode, const char *address, ENetHost **host, ENetPeer **peer, int *sh1, int *sw1, int *sh2, int *sw2)
+int networkInitialize(NetworkMode mode, const char *address, ENetHost **host, ENetPeer **peer)
 {
     if (enet_initialize() != 0)
     {
@@ -46,25 +46,6 @@ int networkInitialize(NetworkMode mode, const char *address, ENetHost **host, EN
         {
             fprintf(stderr, "No client connected within timeout.\n");
             return 1;
-        }
-
-        // Send size to client
-        size serverSize = {*sh1, *sw1};
-        ENetPacket *sizePacket = enet_packet_create(&serverSize, sizeof(size), ENET_PACKET_FLAG_RELIABLE);
-        enet_host_broadcast(*host, 0, sizePacket);
-        enet_host_flush(*host);
-
-        // Receive client's size
-        ENetEvent event;
-        if (enet_host_service(*host, &event, 5000) > 0 && event.type == ENET_EVENT_TYPE_RECEIVE)
-        {
-            if (event.packet->dataLength == sizeof(size))
-            {
-                size *clientSize = (size *)event.packet->data;
-                *sh2 = clientSize->height;
-                *sw2 = clientSize->width;
-            }
-            enet_packet_destroy(event.packet);
         }
     }
     else
@@ -92,25 +73,6 @@ int networkInitialize(NetworkMode mode, const char *address, ENetHost **host, EN
             fprintf(stderr, "Connection failed.\n");
             return 1;
         }
-
-        // Receive server's size
-        ENetEvent event;
-        if (enet_host_service(*host, &event, 5000) > 0 && event.type == ENET_EVENT_TYPE_RECEIVE)
-        {
-            if (event.packet->dataLength == sizeof(size))
-            {
-                size *serverSize = (size *)event.packet->data;
-                *sh1 = serverSize->height;
-                *sw1 = serverSize->width;
-            }
-            enet_packet_destroy(event.packet);
-        }
-
-        // Send client's size to server
-        size clientSize = {*sh2, *sw2};
-        ENetPacket *sizePacket = enet_packet_create(&clientSize, sizeof(size), ENET_PACKET_FLAG_RELIABLE);
-        enet_peer_send(*peer, 0, sizePacket);
-        enet_host_flush(*host);
     }
 
     return 0;
