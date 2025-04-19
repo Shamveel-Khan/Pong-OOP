@@ -23,6 +23,7 @@ using namespace std;
 int screenWidth = 700;
 int screenHeight = 570;
 bool isPaused = false;
+string mode = "Assets/";
 
 float Clamp(float value, float min, float max)
 {
@@ -50,7 +51,7 @@ bool checkPause(bool isHover, Color *buttonColor, ENetHost *host)
     }
     return isPaused;
 }
-
+//TODO: add scoreboard to client and make it consistent in themes
 class scoreBoard
 {
     int scoreLeft;
@@ -89,29 +90,32 @@ class theme
     int borderWidth;
 
 public:
-    theme(Color b, Color ba, Color bo, Rectangle bou, int bw)
+    theme(Color b, Color ba, Color bo, Rectangle bou, int bw,string name)
     {
         ballColor = b;
         border = bo;
         background = ba;
         boundaries = bou;
         borderWidth = bw;
-    }
-    theme(Color b, Texture2D pi, Color ba, Color bo, Rectangle bou, int bw)
-    {
-        ballColor = b;
-        pic = pi;
-        background = ba;
-        border = bo;
-        boundaries = bou;
-        borderWidth = bw;
+
+        Image bck = LoadImage(name.c_str());
+        if (bck.data == NULL)
+        {
+            cout << "Failed to load background image!" << endl;
+            exit(1);
+        }
+        ImageResize(&bck, bou.width, bou.height);
+        pic = LoadTextureFromImage(bck);
+        UnloadImage(bck);
     }
     void drawBoard(int sw, int sh)
     {
         ClearBackground(background);
+        DrawRectangle(0, 0, screenWidth, 25, BLACK); // Top bar
         DrawRectangleLinesEx(boundaries, borderWidth, YELLOW);
-        DrawCircleLines(boundaries.width / 2, boundaries.height / 2, 70, WHITE);
-        DrawLine(boundaries.width / 2, 25, boundaries.width / 2, boundaries.height + 25, WHITE);
+        DrawTexture(pic, boundaries.x, boundaries.y, WHITE);
+        DrawCircleLines(boundaries.x + boundaries.width / 2, boundaries.y + boundaries.height / 2, 70, WHITE);
+        DrawLine(screenWidth / 2, boundaries.y, screenWidth / 2, boundaries.y + boundaries.height, WHITE);
     }
     int getBorderWidth()
     {
@@ -120,6 +124,9 @@ public:
     Color getBallColor()
     {
         return ballColor;
+    }
+    ~theme() {
+        UnloadTexture(pic);
     }
 };
 
@@ -133,22 +140,23 @@ class paddle
     Color color;
 
 public:
-    paddle(int x, int y, Texture2D skin, Color c, int h, int w)
-    {
-        this->skin = skin;
-        positionX = x;
-        positionY = y;
-        color = c;
-        height = h;
-        width = w;
-    }
-    paddle(int x, int y, Color c, int h, int w)
+    paddle(int x, int y, Color c, int h, int w,string name)
     {
         positionX = x;
         positionY = y;
         color = c;
         height = h;
         width = w;
+
+        Image skinImg = LoadImage(name.c_str());
+        if (skinImg.data == NULL)
+        {
+            cout << "Image was NULL" << endl;
+            exit(1);
+        }
+        ImageResize(&skinImg, width, height);
+        skin = LoadTextureFromImage(skinImg);
+        UnloadImage(skinImg);
     }
     void setPositionY(int y)
     {
@@ -160,7 +168,7 @@ public:
     }
     void drawPaddle()
     {
-        DrawRectangle(positionX, positionY, width, height, color);
+        DrawTexture(skin, positionX, positionY, WHITE);
     }
     void update()
     {
@@ -178,6 +186,9 @@ public:
         Rectangle r = {(float)positionX, (float)positionY, (float)width, (float)height};
         return r;
     }
+    ~paddle() {
+        UnloadTexture(skin);
+    }
 };
 
 class ball
@@ -191,17 +202,7 @@ class ball
     Texture2D skin;
 
 public:
-    ball(int x, int y, int r, Color c, Texture2D t, int speedX, int speedY)
-    {
-        positionX = x;
-        positionY = y;
-        radius = r;
-        color = c;
-        skin = t;
-        ballSpeedX = speedX;
-        ballSpeedY = speedY;
-    }
-    ball(int x, int y, int r, Color c, int speedX, int speedY)
+    ball(int x, int y, int r, Color c, int speedX, int speedY,string name)
     {
         positionX = x;
         positionY = y;
@@ -209,10 +210,20 @@ public:
         color = c;
         ballSpeedX = speedX;
         ballSpeedY = speedY;
+
+        Image skinImg = LoadImage(name.c_str());
+        if (skinImg.data == NULL)
+        {
+            cout << "Failed to load background image!" << endl;
+            exit(1);
+        }
+        ImageResize(&skinImg, radius * 2, radius * 2);
+        skin = LoadTextureFromImage(skinImg);
+        UnloadImage(skinImg);
     }
     void drawBall()
     {
-        DrawCircle(positionX, positionY, radius, color);
+        DrawTexture(skin, positionX - radius, positionY - radius, WHITE);
     }
     void setPositionX(int x)
     {
@@ -268,6 +279,9 @@ public:
         positionX += ballSpeedX;
         positionY += ballSpeedY;
     }
+    ~ball() {
+        UnloadTexture(skin);
+    }
 };
 
 struct state
@@ -280,17 +294,39 @@ struct state
 
 int main(void)
 {
+    int choice;
+    cout<<"enter your choice: \n";
+    cout<<"1 for underWater\n2 for fire and ice\n";
+    cin>>choice;
+    string mode2;
+    switch (choice)
+    {
+    case 1:
+        mode2 = "underWater/";
+        break;
+    case 2:
+        mode2 = "fireAndIce/";
+    
+    default:
+        mode2 = "underWater/";
+        break;
+    }
     int oldSW = 600, oldSH = 600;
     int score1 = 0;
     int score2 = 0;
+
+    InitWindow(screenWidth, screenHeight + 30, "Server - Multiplayer Pong");
+    SetTargetFPS(60);
+    SetWindowState(FLAG_WINDOW_RESIZABLE);
     Color background = {50, 168, 82, 255};
+
     Rectangle border = {0, 25, (float)screenWidth, (float)screenHeight};
-    theme classic(RED, background, YELLOW, border, 5);
-    paddle left(10, screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE, (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f));
-    paddle right(screenWidth - 30, screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE, (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f));
+    theme classic(RED, background, YELLOW, border, 5,mode+mode2+"background.png");
+    paddle left(10, screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE, (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f),mode+mode2+"paddle.png");
+    paddle right(screenWidth - 30, screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE, (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f),mode+mode2+"paddle.png");
     scoreBoard score(WHITE);
 
-    ball gameBall(oldSW / 2, oldSH / 2, (screenWidth * 0.02f), classic.getBallColor(), (screenWidth * 0.007f), (screenHeight * 0.005f));
+    ball gameBall(oldSW / 2, oldSH / 2, (screenWidth * 0.02f), classic.getBallColor(), (screenWidth * 0.007f), (screenHeight * 0.005f),mode+mode2+"ball.png");
     state sts;
     state dummy = {0, 0, 0, 0};
 
@@ -303,10 +339,6 @@ int main(void)
     sts.p2 = right.getPositionY();
 
     Rectangle button = {(float)screenWidth - 70, 5, 60, 15};
-
-    InitWindow(screenWidth, screenHeight + 30, "Server - Multiplayer Pong");
-    SetTargetFPS(60);
-    SetWindowState(FLAG_WINDOW_RESIZABLE);
     Color buttonColor = WHITE;
 
     while (!WindowShouldClose())
@@ -321,13 +353,9 @@ int main(void)
             int signSpeedX = (gameBall.getBallSpeedX() < 0) ? -1 : 1;
             int signSpeedY = (gameBall.getBallSpeedY() < 0) ? -1 : 1;
 
-            left = paddle(10, screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE, (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f));
-            right = paddle(screenWidth - 30, screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE, (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f));
-
             float newBallX = sts.x * ((float)screenWidth / oldSW);
             float newBallY = sts.y * ((float)screenHeight / oldSH);
             int newBallRadius = (int)(screenWidth * 0.02f);
-            gameBall = ball((int)newBallX, (int)newBallY, newBallRadius, classic.getBallColor(), (int)(signSpeedX * screenWidth * 0.007f), (int)(signSpeedY * screenHeight * 0.005f));
 
             // Clamp ball position within the new screen bounds.
             if (gameBall.getPositionX() < newBallRadius)
@@ -341,7 +369,21 @@ int main(void)
 
             // Update the border and re-create the theme with the new board dimensions.
             border = {0, 25, (float)screenWidth, (float)screenHeight};
-            classic = theme(RED, background, YELLOW, border, 5);
+
+            classic.~theme();
+            gameBall.~ball();
+            left.~paddle();
+            right.~paddle();
+            new (&left) paddle(classic.getBorderWidth() + 5, screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE,
+                               (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode+mode2+"paddle.png");
+
+            new (&right) paddle(screenWidth - 10 - (int)(screenWidth * 0.02f), screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE,
+                                (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode+mode2+"paddle.png");
+
+            new (&gameBall) ball((int)newBallX, (int)newBallY, newBallRadius, classic.getBallColor(),
+                                 (int)(signSpeedX * screenWidth * 0.007f), (int)(signSpeedY * screenHeight * 0.005f), mode+mode2+"ball.png");
+
+            new (&classic) theme(RED, background, YELLOW, border, 5, mode+mode2+"background.png");
         }
         time_t now = time(0);
         struct tm *localTime = localtime(&now);

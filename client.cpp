@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <ctime>
 #include <cmath>
+#include <string>
 #include <iostream>
 using namespace std;
 
@@ -23,7 +24,7 @@ using namespace std;
 
 int screenHeight = 570, screenWidth = 600; // Adjusted for top bar
 bool isPaused = false;                     // Global pause state
-
+string mode = "Assets/";
 struct state
 {
     float x;
@@ -32,7 +33,8 @@ struct state
     float p1;
 };
 
-struct snapshot {
+struct snapshot
+{
     float positionY;
     float ballX;
     float ballY;
@@ -71,18 +73,19 @@ class theme
     Color border;
     Rectangle boundaries;
     int borderWidth;
-
+//TODO: add scoreboard to client and make it consistent in themes
 public:
-    theme(Color b, Color ba, Color bo, Rectangle bou, int bw,string name)
+    theme(Color b, Color ba, Color bo, Rectangle bou, int bw, string name)
     {
         ballColor = b;
         background = ba;
         border = bo;
         boundaries = bou;
         borderWidth = bw;
-        
+
         Image bck = LoadImage(name.c_str());
-        if (bck.data == NULL) {
+        if (bck.data == NULL)
+        {
             cout << "Failed to load background image!" << endl;
             exit(1);
         }
@@ -95,7 +98,7 @@ public:
         ClearBackground(background);
         DrawRectangle(0, 0, screenWidth, 25, BLACK); // Top bar
         DrawRectangleLinesEx(boundaries, borderWidth, YELLOW);
-        DrawTexture(pi,boundaries.x,boundaries.y,WHITE);
+        DrawTexture(pi, boundaries.x, boundaries.y, WHITE);
         DrawCircleLines(boundaries.x + boundaries.width / 2, boundaries.y + boundaries.height / 2, 70, WHITE);
         DrawLine(screenWidth / 2, boundaries.y, screenWidth / 2, boundaries.y + boundaries.height, WHITE);
     }
@@ -107,9 +110,10 @@ public:
     {
         return ballColor;
     }
-    ~theme() {
+    ~theme()
+    {
         UnloadTexture(pi);
-    }    
+    }
 };
 
 class paddle
@@ -122,7 +126,7 @@ class paddle
     Color color;
 
 public:
-    paddle(int x, int y, Color c, int h, int w,string name)
+    paddle(int x, int y, Color c, int h, int w, string name)
     {
         positionX = x;
         positionY = y;
@@ -131,11 +135,12 @@ public:
         width = w;
 
         Image skinImg = LoadImage(name.c_str());
-        if(skinImg.data == NULL) {
-            cout<<"Image was NULL"<<endl;
+        if (skinImg.data == NULL)
+        {
+            cout << "Image was NULL" << endl;
             exit(1);
         }
-        ImageResize(&skinImg,width,height);
+        ImageResize(&skinImg, width, height);
         skin = LoadTextureFromImage(skinImg);
         UnloadImage(skinImg);
     }
@@ -149,7 +154,7 @@ public:
     }
     void drawPaddle()
     {
-        DrawTexture(skin,positionX,positionY,WHITE);
+        DrawTexture(skin, positionX, positionY, WHITE);
     }
     void update()
     {
@@ -164,7 +169,8 @@ public:
         Rectangle r = {(float)positionX, (float)positionY, (float)width, (float)height};
         return r;
     }
-    ~paddle() {
+    ~paddle()
+    {
         UnloadTexture(skin);
     }
 };
@@ -180,7 +186,7 @@ class ball
     Texture2D skin;
 
 public:
-    ball(int x, int y, int r, Color c, int speedX, int speedY,string name)
+    ball(int x, int y, int r, Color c, int speedX, int speedY, string name)
     {
         positionX = x;
         positionY = y;
@@ -190,11 +196,12 @@ public:
         ballSpeedY = speedY;
 
         Image skinImg = LoadImage(name.c_str());
-        if (skinImg.data == NULL) {
+        if (skinImg.data == NULL)
+        {
             cout << "Failed to load background image!" << endl;
             exit(1);
         }
-        ImageResize(&skinImg, radius*2, radius*2);
+        ImageResize(&skinImg, radius * 2, radius * 2);
         skin = LoadTextureFromImage(skinImg);
         UnloadImage(skinImg);
     }
@@ -252,7 +259,8 @@ public:
         positionX += ballSpeedX;
         positionY += ballSpeedY;
     }
-    ~ball() {
+    ~ball()
+    {
         UnloadTexture(skin);
     }
 };
@@ -262,41 +270,23 @@ int main(void)
     cout << "Enter ip: ";
     string ip;
     cin >> ip;
-    int oldSW = screenWidth, oldSH = screenHeight;
-    state ballState = {(float)screenWidth / 2, (float)screenHeight / 2, (float)screenHeight / 2, (float)screenHeight / 2};
-    int signX = 1;
-    int signY = 1;
-    const double DELAY = 0.3;
-    double now= GetTime();
-    InitWindow(screenWidth, screenHeight + 30, "Client - Multiplayer Pong"); // Include top bar
-    SetTargetFPS(60);
-    SetWindowState(FLAG_WINDOW_RESIZABLE);
-    snapshot snaps[2]={{
-                            float(screenHeight / 2 - (int)(screenHeight * 0.165f / 2)),
-                            (ballState.x * ((float)screenWidth / oldSW)),
-                            (ballState.y * ((float)screenHeight / oldSH)),
-                            now
-                        },
-                        {
-                            float(screenHeight / 2 - (int)(screenHeight * 0.165f / 2)),
-                            (ballState.x * ((float)screenWidth / oldSW)),
-                            (ballState.y * ((float)screenHeight / oldSH)),
-                            now
-                        }};
-
-    Color background = {50, 168, 82, 255};
-    Rectangle border = {0, 25, (float)screenWidth, (float)screenHeight}; // Play area starts at Y=25
-    theme classic(RED, background, YELLOW, border, 5,"underwaterbackground.png");
-
-    paddle left(classic.getBorderWidth() + 5, screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE,
-                (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f),"paddle.png");
-    paddle right(screenWidth - 10 - (int)(screenWidth * 0.02f), screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE,
-                 (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f),"paddle.png");
-
-    ball gameBall((ballState.x * ((float)screenWidth / oldSW)), (ballState.y * ((float)screenHeight / oldSH)),
-                  (screenWidth * 0.02f), classic.getBallColor(),
-                  (screenWidth * 0.007f), (screenHeight * 0.005f),"ball.png");
-
+    int choice;
+    cout<<"enter your choice: \n";
+    cout<<"1 for underWater\n2 for fire and ice\n";
+    cin>>choice;
+    string mode2;
+    switch (choice)
+    {
+    case 1:
+        mode2 = "underWater/";
+        break;
+    case 2:
+        mode2 = "fireAndIce/";
+        break;
+    default:
+        mode2 = "underWater/";
+        break;
+    }
     ENetHost *host = NULL;
     ENetPeer *peer = NULL;
     if (networkInitialize(MODE_CLIENT, ip.c_str(), &host, &peer) != 0)
@@ -304,6 +294,37 @@ int main(void)
         printf("Failed to initialize network\n");
         return 1;
     }
+    cout << ".............................\n............................";
+    int oldSW = screenWidth, oldSH = screenHeight;
+    state ballState = {(float)screenWidth / 2, (float)screenHeight / 2, (float)screenHeight / 2, (float)screenHeight / 2};
+    int signX = 1;
+    int signY = 1;
+    const double DELAY = 0.1;
+    double now = GetTime();
+    InitWindow(screenWidth, screenHeight + 30, "Client - Multiplayer Pong"); // Include top bar
+    SetTargetFPS(60);
+    SetWindowState(FLAG_WINDOW_RESIZABLE);
+    snapshot snaps[2] = {{float(screenHeight / 2 - (int)(screenHeight * 0.165f / 2)),
+                          (ballState.x * ((float)screenWidth / oldSW)),
+                          (ballState.y * ((float)screenHeight / oldSH)),
+                          now},
+                         {float(screenHeight / 2 - (int)(screenHeight * 0.165f / 2)),
+                          (ballState.x * ((float)screenWidth / oldSW)),
+                          (ballState.y * ((float)screenHeight / oldSH)),
+                          now}};
+
+    Color background = {50, 168, 82, 255};
+    Rectangle border = {0, 25, (float)screenWidth, (float)screenHeight}; // Play area starts at Y=25
+    theme classic(RED, background, YELLOW, border, 5, mode+mode2+"background.png");
+
+    paddle left(classic.getBorderWidth() + 5, screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE,
+                (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode+mode2+"paddle.png");
+    paddle right(screenWidth - 10 - (int)(screenWidth * 0.02f), screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE,
+                 (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode+mode2+"paddle.png");
+
+    ball gameBall((ballState.x * ((float)screenWidth / oldSW)), (ballState.y * ((float)screenHeight / oldSH)),
+                  (screenWidth * 0.02f), classic.getBallColor(),
+                  (screenWidth * 0.007f), (screenHeight * 0.005f), mode+mode2+"ball.png");
 
     Color buttonColor = WHITE;
 
@@ -325,20 +346,20 @@ int main(void)
             int newBallRadius = (int)(screenWidth * 0.02f);
 
             border = {0, 25, (float)screenWidth, (float)screenHeight};
-            classic.~theme(); 
+            classic.~theme();
             gameBall.~ball();
             left.~paddle();
             right.~paddle();
             new (&left) paddle(classic.getBorderWidth() + 5, screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE,
-            (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f),"paddle.png");
-            
+                               (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode+mode2+"paddle.png");
+
             new (&right) paddle(screenWidth - 10 - (int)(screenWidth * 0.02f), screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE,
-            (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f),"paddle.png");
+                                (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode+mode2+"paddle.png");
 
             new (&gameBall) ball((int)newBallX, (int)newBallY, newBallRadius, classic.getBallColor(),
-            (int)(signSpeedX * screenWidth * 0.007f), (int)(signSpeedY * screenHeight * 0.005f),"ball.png");
+                                 (int)(signSpeedX * screenWidth * 0.007f), (int)(signSpeedY * screenHeight * 0.005f), mode+mode2+"ball.png");
 
-            new (&classic) theme(RED, background, YELLOW, border, 5, "underwaterbackground.png");
+            new (&classic) theme(RED, background, YELLOW, border, 5, mode+mode2+"background.png");
         }
 
         // Pause button interaction
@@ -360,20 +381,24 @@ int main(void)
             if (!(std::isinf(ballState.p1) || std::isnan(ballState.p1)) && !(std::isinf(ballState.x) || std::isnan(ballState.x)) && !(std::isinf(ballState.y) || std::isnan(ballState.y)) && ballState.x > 0 && ballState.x < screenWidth && ballState.y > 0 && ballState.y < screenHeight && ballState.p1 >= 0 && ballState.p1 < screenHeight)
             {
 
-                snaps[0]=snaps[1];
-                snaps[1]= {ballState.p1,ballState.x,ballState.y,now};
-                double renderTime = now-DELAY;
+                snaps[0] = snaps[1];
+                snaps[1] = {ballState.p1, ballState.x, ballState.y, now};
+                double renderTime = now - DELAY;
                 double dt = snaps[1].time - snaps[0].time;
                 float drawY = snaps[1].positionY;
                 float drawBallX = snaps[1].ballX;
                 float drawBallY = snaps[1].ballY;
 
-                if(dt>0) {
-                    float t = float((renderTime - snaps[0].time)/dt);
-                    if(t<0) t=0; else if(t>1) t=1;
+                if (dt > 0)
+                {
+                    float t = float((renderTime - snaps[0].time) / dt);
+                    if (t < 0)
+                        t = 0;
+                    else if (t > 1)
+                        t = 1;
 
-                    drawY = snaps[0].positionY + (snaps[1].positionY - snaps[0].positionY)*t;
-                    float drawBallX = snaps[0].ballX + (snaps[1].ballX- snaps[0].ballX) * t;
+                    drawY = snaps[0].positionY + (snaps[1].positionY - snaps[0].positionY) * t;
+                    float drawBallX = snaps[0].ballX + (snaps[1].ballX - snaps[0].ballX) * t;
                     float drawBallY = snaps[0].ballY + (snaps[1].ballY - snaps[0].ballY) * t;
                 }
                 left.setPositionY(ballState.p1);

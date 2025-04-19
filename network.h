@@ -31,6 +31,8 @@ int networkReceiveState(ENetHost* host, float* x, float* y, float* serverPaddle,
 // Returns 1 if connected, -1 if a disconnect event occurs, or 0 if timeout/no event.
 int networkWaitForConnect(ENetHost* host, int timeout);
 void networkProcessEvents(ENetHost* host);
+void sendPause(ENetHost *host, ENetPeer *peer, bool state);
+bool receivePause(ENetHost *host, bool curr);
 
 #ifdef __cplusplus
 }
