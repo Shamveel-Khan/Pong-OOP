@@ -51,24 +51,55 @@ bool checkPause(bool isHover, Color *buttonColor, ENetHost *host)
     }
     return isPaused;
 }
-//TODO: add scoreboard to client and make it consistent in themes
+// TODO: add scoreboard to client and make it consistent in themes
 class scoreBoard
 {
     int scoreLeft;
     int scoreRight;
-    Color scoreColor;
 
 public:
-    scoreBoard(Color c1)
+    scoreBoard()
     {
         scoreLeft = 0;
         scoreRight = 0;
-        scoreColor = c1;
     }
-    void drawBoard()
+    void drawBoard(int choice)
     {
-        DrawText(TextFormat("%d", scoreRight), screenWidth / 4, 0.066 * screenHeight, 0.055 * screenWidth, scoreColor);
-        DrawText(TextFormat("%d", scoreLeft), screenWidth * 0.75, 0.066 * screenHeight, 0.055 * screenWidth, scoreColor);
+        float posX, posX2, posY, fontSize;
+        Color scoreColor;
+        switch (choice)
+        {
+        case 1:
+            posX = 0.175 * screenWidth;
+            posX2 = 0.6875 * screenWidth;
+            posY = 0.375 * screenHeight;
+            scoreColor = (Color){120, 252, 255, 90};
+            fontSize = 0.1625 * (screenWidth + screenHeight);
+            break;
+        case 2:
+            posX = 0.1125 * screenWidth;
+            posX2 = 0.82125 * screenWidth;
+            posY = 0.4575 * screenHeight;
+            scoreColor = (Color){150, 255, 255, 255};
+            fontSize = 0.075 * (screenWidth + screenHeight);
+            break;
+        case 3:
+            posX = 0.1125 * screenWidth;
+            posX2 = 0.82125 * screenWidth;
+            posY = 0.4575 * screenHeight;
+            scoreColor = (Color){124, 252, 0, 255};
+            fontSize = 0.075 * (screenWidth + screenHeight);
+            break;
+        default:
+            posX = 0.175 * screenWidth;
+            posX2 = 0.6875 * screenWidth;
+            posY = 0.375 * screenHeight;
+            scoreColor = (Color){120, 252, 255, 90};
+            fontSize = 0.1625 * (screenWidth + screenHeight);
+            break;
+        }
+        DrawText(TextFormat("%d", scoreRight), posX2, posY, fontSize, scoreColor);
+        DrawText(TextFormat("%d", scoreLeft), posX, posY, fontSize, scoreColor);
     }
     int *getScore1()
     {
@@ -90,7 +121,7 @@ class theme
     int borderWidth;
 
 public:
-    theme(Color b, Color ba, Color bo, Rectangle bou, int bw,string name)
+    theme(Color b, Color ba, Color bo, Rectangle bou, int bw, string name)
     {
         ballColor = b;
         border = bo;
@@ -125,7 +156,8 @@ public:
     {
         return ballColor;
     }
-    ~theme() {
+    ~theme()
+    {
         UnloadTexture(pic);
     }
 };
@@ -140,7 +172,7 @@ class paddle
     Color color;
 
 public:
-    paddle(int x, int y, Color c, int h, int w,string name)
+    paddle(int x, int y, Color c, int h, int w, string name)
     {
         positionX = x;
         positionY = y;
@@ -186,7 +218,8 @@ public:
         Rectangle r = {(float)positionX, (float)positionY, (float)width, (float)height};
         return r;
     }
-    ~paddle() {
+    ~paddle()
+    {
         UnloadTexture(skin);
     }
 };
@@ -202,7 +235,7 @@ class ball
     Texture2D skin;
 
 public:
-    ball(int x, int y, int r, Color c, int speedX, int speedY,string name)
+    ball(int x, int y, int r, Color c, int speedX, int speedY, string name)
     {
         positionX = x;
         positionY = y;
@@ -279,7 +312,8 @@ public:
         positionX += ballSpeedX;
         positionY += ballSpeedY;
     }
-    ~ball() {
+    ~ball()
+    {
         UnloadTexture(skin);
     }
 };
@@ -295,9 +329,9 @@ struct state
 int main(void)
 {
     int choice;
-    cout<<"enter your choice: \n";
-    cout<<"1 for underWater\n2 for fire and ice\n";
-    cin>>choice;
+    cout << "enter your choice: \n";
+    cout << "1 for underWater\n2 for fire and ice\n3 for forest and wood\n";
+    cin >> choice;
     string mode2;
     switch (choice)
     {
@@ -306,7 +340,10 @@ int main(void)
         break;
     case 2:
         mode2 = "fireAndIce/";
-    
+        break;
+    case 3:
+        mode2 = "forestAndWood/";
+        break;
     default:
         mode2 = "underWater/";
         break;
@@ -318,15 +355,14 @@ int main(void)
     InitWindow(screenWidth, screenHeight + 30, "Server - Multiplayer Pong");
     SetTargetFPS(60);
     SetWindowState(FLAG_WINDOW_RESIZABLE);
-    Color background = {50, 168, 82, 255};
 
     Rectangle border = {0, 25, (float)screenWidth, (float)screenHeight};
-    theme classic(RED, background, YELLOW, border, 5,mode+mode2+"background.png");
-    paddle left(10, screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE, (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f),mode+mode2+"paddle.png");
-    paddle right(screenWidth - 30, screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE, (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f),mode+mode2+"paddle.png");
-    scoreBoard score(WHITE);
+    theme classic(RED, BLACK, YELLOW, border, 5, mode + mode2 + "background.png");
+    paddle left(10, screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE, (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode + mode2 + "paddle.png");
+    paddle right(screenWidth - 30, screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE, (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode + mode2 + "paddle.png");
+    scoreBoard score;
 
-    ball gameBall(oldSW / 2, oldSH / 2, (screenWidth * 0.02f), classic.getBallColor(), (screenWidth * 0.007f), (screenHeight * 0.005f),mode+mode2+"ball.png");
+    ball gameBall(oldSW / 2, oldSH / 2, (screenWidth * 0.02f), classic.getBallColor(), (screenWidth * 0.007f), (screenHeight * 0.005f), mode + mode2 + "ball.png");
     state sts;
     state dummy = {0, 0, 0, 0};
 
@@ -375,15 +411,15 @@ int main(void)
             left.~paddle();
             right.~paddle();
             new (&left) paddle(classic.getBorderWidth() + 5, screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE,
-                               (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode+mode2+"paddle.png");
+                               (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode + mode2 + "paddle.png");
 
             new (&right) paddle(screenWidth - 10 - (int)(screenWidth * 0.02f), screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE,
-                                (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode+mode2+"paddle.png");
+                                (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode + mode2 + "paddle.png");
 
             new (&gameBall) ball((int)newBallX, (int)newBallY, newBallRadius, classic.getBallColor(),
-                                 (int)(signSpeedX * screenWidth * 0.007f), (int)(signSpeedY * screenHeight * 0.005f), mode+mode2+"ball.png");
+                                 (int)(signSpeedX * screenWidth * 0.007f), (int)(signSpeedY * screenHeight * 0.005f), mode + mode2 + "ball.png");
 
-            new (&classic) theme(RED, background, YELLOW, border, 5, mode+mode2+"background.png");
+            new (&classic) theme(RED, BLACK, YELLOW, border, 5, mode + mode2 + "background.png");
         }
         time_t now = time(0);
         struct tm *localTime = localtime(&now);
@@ -418,8 +454,8 @@ int main(void)
             BeginDrawing();
             DrawRectangle(0, 0, screenWidth, 25, BLACK);
             DrawText(TextFormat("Current Time: %s", buffer), 10, 5, 20, WHITE);
-            score.drawBoard();
             classic.drawBoard(screenWidth, screenHeight);
+            score.drawBoard(choice);
             left.drawPaddle();
             right.drawPaddle();
             gameBall.drawBall();

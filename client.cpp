@@ -65,6 +65,65 @@ bool checkPause(bool isHover, Color *buttonColor, ENetPeer *peer, ENetHost *host
     return isPaused;
 }
 
+class scoreBoard
+{
+    int scoreLeft;
+    int scoreRight;
+
+public:
+    scoreBoard()
+    {
+        scoreLeft = 0;
+        scoreRight = 0;
+    }
+    void drawBoard(int choice)
+    {
+        float posX, posX2, posY, fontSize;
+        Color scoreColor;
+        switch (choice)
+        {
+        case 1:
+            posX = 0.175 * screenWidth;
+            posX2 = 0.6875 * screenWidth;
+            posY = 0.375 * screenHeight;
+            scoreColor = (Color){120, 252, 255, 90};
+            fontSize = 0.1625 * (screenWidth + screenHeight);
+            break;
+        case 2:
+            posX = 0.1125 * screenWidth;
+            posX2 = 0.82125 * screenWidth;
+            posY = 0.4575 * screenHeight;
+            scoreColor = (Color){150, 255, 255, 255};
+            fontSize = 0.075 * (screenWidth + screenHeight);
+            break;
+        case 3:
+            posX = 0.1125 * screenWidth;
+            posX2 = 0.82125 * screenWidth;
+            posY = 0.4575 * screenHeight;
+            scoreColor = (Color){124, 252, 0, 255};
+            fontSize = 0.075 * (screenWidth + screenHeight);
+            break;
+        default:
+            posX = 0.175 * screenWidth;
+            posX2 = 0.6875 * screenWidth;
+            posY = 0.375 * screenHeight;
+            scoreColor = (Color){120, 252, 255, 90};
+            fontSize = 0.1625 * (screenWidth + screenHeight);
+            break;
+        }
+        DrawText(TextFormat("%d", scoreRight), posX2, posY, fontSize, scoreColor);
+        DrawText(TextFormat("%d", scoreLeft), posX, posY, fontSize, scoreColor);
+    }
+    int *getScore1()
+    {
+        return &scoreLeft;
+    }
+    int *getScore2()
+    {
+        return &scoreRight;
+    }
+};
+
 class theme
 {
     Color ballColor;
@@ -73,7 +132,7 @@ class theme
     Color border;
     Rectangle boundaries;
     int borderWidth;
-//TODO: add scoreboard to client and make it consistent in themes
+    // TODO: add scoreboard to client and make it consistent in themes
 public:
     theme(Color b, Color ba, Color bo, Rectangle bou, int bw, string name)
     {
@@ -271,9 +330,9 @@ int main(void)
     string ip;
     cin >> ip;
     int choice;
-    cout<<"enter your choice: \n";
-    cout<<"1 for underWater\n2 for fire and ice\n";
-    cin>>choice;
+    cout << "enter your choice: \n";
+    cout << "1 for underWater\n2 for fire and ice\n";
+    cin >> choice;
     string mode2;
     switch (choice)
     {
@@ -294,7 +353,7 @@ int main(void)
         printf("Failed to initialize network\n");
         return 1;
     }
-    cout << ".............................\n............................";
+    scoreBoard score;
     int oldSW = screenWidth, oldSH = screenHeight;
     state ballState = {(float)screenWidth / 2, (float)screenHeight / 2, (float)screenHeight / 2, (float)screenHeight / 2};
     int signX = 1;
@@ -315,16 +374,16 @@ int main(void)
 
     Color background = {50, 168, 82, 255};
     Rectangle border = {0, 25, (float)screenWidth, (float)screenHeight}; // Play area starts at Y=25
-    theme classic(RED, background, YELLOW, border, 5, mode+mode2+"background.png");
+    theme classic(RED, background, YELLOW, border, 5, mode + mode2 + "background.png");
 
     paddle left(classic.getBorderWidth() + 5, screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE,
-                (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode+mode2+"paddle.png");
+                (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode + mode2 + "paddle.png");
     paddle right(screenWidth - 10 - (int)(screenWidth * 0.02f), screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE,
-                 (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode+mode2+"paddle.png");
+                 (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode + mode2 + "paddle.png");
 
     ball gameBall((ballState.x * ((float)screenWidth / oldSW)), (ballState.y * ((float)screenHeight / oldSH)),
                   (screenWidth * 0.02f), classic.getBallColor(),
-                  (screenWidth * 0.007f), (screenHeight * 0.005f), mode+mode2+"ball.png");
+                  (screenWidth * 0.007f), (screenHeight * 0.005f), mode + mode2 + "ball.png");
 
     Color buttonColor = WHITE;
 
@@ -351,15 +410,15 @@ int main(void)
             left.~paddle();
             right.~paddle();
             new (&left) paddle(classic.getBorderWidth() + 5, screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE,
-                               (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode+mode2+"paddle.png");
+                               (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode + mode2 + "paddle.png");
 
             new (&right) paddle(screenWidth - 10 - (int)(screenWidth * 0.02f), screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE,
-                                (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode+mode2+"paddle.png");
+                                (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode + mode2 + "paddle.png");
 
             new (&gameBall) ball((int)newBallX, (int)newBallY, newBallRadius, classic.getBallColor(),
-                                 (int)(signSpeedX * screenWidth * 0.007f), (int)(signSpeedY * screenHeight * 0.005f), mode+mode2+"ball.png");
+                                 (int)(signSpeedX * screenWidth * 0.007f), (int)(signSpeedY * screenHeight * 0.005f), mode + mode2 + "ball.png");
 
-            new (&classic) theme(RED, background, YELLOW, border, 5, mode+mode2+"background.png");
+            new (&classic) theme(RED, background, YELLOW, border, 5, mode + mode2 + "background.png");
         }
 
         // Pause button interaction
@@ -409,6 +468,7 @@ int main(void)
             right.update();
             BeginDrawing();
             classic.drawBoard();
+            score.drawBoard(choice);
             left.drawPaddle();
             right.drawPaddle();
             gameBall.drawBall();
