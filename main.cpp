@@ -3,98 +3,55 @@
 #include <vector>
 #include <cmath>
 using namespace std;
+
 float baseWidth = 1920.0f;
 float baseHeight = 1080.0f;
-float buttonWidth = 0.85f * 600;
-float buttonHeight = 0.85f * 160;
+float buttonWidth = .75f * 600;
+float buttonHeight = .75f * 160;
 float SCALE;
-enum gameMode{
-    ONLINE,
-    OFFLINE,
-    COMPUTER
 
-};
-enum gameTHEME{
-    THEME1,
-    THEME2,
-    THEME3
-};
+enum gameMode { ONLINE, OFFLINE, COMPUTER };
+gameMode gameMODE = OFFLINE;
+enum gameTHEME { ICEANDFIRE, FOREST, UNDERWATER };
+
 class Settings {
-    private:
-        char paddleUp;
-        char paddleDown;
-        bool sound;
-        bool music;
-    
-    public:
-        
-        Settings() {
-            paddleUp = 'W';
-            paddleDown = 'S';
-            sound = true;
-            music = true;
-        }
-    
-        // Parameterized constructor
-        Settings(char upKey, char downKey, bool soundOn, bool musicOn) {
-            paddleUp = upKey;
-            paddleDown = downKey;
-            sound = soundOn;
-            music = musicOn;
-        }
-    
-        // Getters
-        char getPaddleUp() const {
-            return paddleUp;
-        }
-    
-        char getPaddleDown() const {
-            return paddleDown;
-        }
-    
-        bool isSoundOn() const {
-            return sound;
-        }
-    
-        bool isMusicOn() const {
-            return music;
-        }
-    
-       
-        void turnOnSound() {
-            sound = true;
-        }
-    
-        void turnOffSound() {
-            sound = false;
-        }
-    
-        void turnOnMusic() {
-            music = true;
-        }
-    
-        void turnOffMusic() {
-            music = false;
-        }
-    };
-    
- //hey dont touch these thing for now it will be gotten from other header file 
-enum STATES{
-    LOBBY,
-    PLAY,
-    EXIT,
-    MODE,
-    THEME,
-    SETTINGS
+private:
+
+    bool sound;
+    bool music;
+
+public:
+    Settings() {
+  
+        sound = true;
+        music = true;
+    }
+
+    Settings( bool soundOn, bool musicOn) {
+
+        sound = soundOn;
+        music = musicOn;
+    }
+
+
+
+
+    bool isSoundOn() const { return sound; }
+    bool isMusicOn() const { return music; }
+
+    void turnOnSound() { sound = true; }
+    void turnOffSound() { sound = false; }
+    void turnOnMusic() { music = true; }
+    void turnOffMusic() { music = false; }
 };
-STATES gameSTATE = LOBBY; 
+
+enum STATES { LOBBY, PLAY, EXIT, MODE, THEME, SETTINGS };
+STATES gameSTATE = LOBBY;
 
 Vector2 getScreenCenter(Vector2 size) {
-    Vector2 coords = { (GetScreenWidth() - size.x) / 2, (GetScreenHeight() - size.y) / 2 };
+    Vector2 coords = {(GetScreenWidth() - size.x) / 2, (GetScreenHeight() - size.y) / 2};
     return coords;
 }
-
-
 
 void calcScale() {
     float scaleX = GetScreenWidth() / baseWidth;
@@ -108,8 +65,8 @@ public:
     Texture2D imgTexture;
 
     comp() {
-        imgTexture = { 0 };
-        coords = { 0, 0 };
+        imgTexture = {0};
+        coords = {0, 0};
     }
 
     comp(Vector2 coords, Texture2D texture) : coords(coords), imgTexture(texture) {
@@ -117,13 +74,20 @@ public:
         this->coords.y *= SCALE;
     }
 
-    inline Vector2 getSize() const {
-        return Vector2{ float(imgTexture.width * SCALE), float(imgTexture.height * SCALE) };
+    comp(Texture2D texture) {
+        imgTexture = texture;
+        coords = {0, 0};
     }
 
+    inline Vector2 getSize() const {
+        return Vector2{float(imgTexture.width * SCALE), float(imgTexture.height * SCALE)};
+    }
+
+    Vector2 getCoords() const { return coords; }
+
     void setSize(Vector2 size) {
-        imgTexture.width = size.x * SCALE;   
-        imgTexture.height = size.y * SCALE;  
+        imgTexture.width = size.x * SCALE;
+        imgTexture.height = size.y * SCALE;
     }
 
     void setCoords(Vector2 coords) {
@@ -143,30 +107,27 @@ public:
     }
 
     void draw(char c) {
-        if(c!='c') return;
+        if (c != 'c') return;
         Vector2 COORDS = {
-            float((GetScreenWidth() - (imgTexture.width * SCALE)) / 2),
-            float((GetScreenHeight() - (imgTexture.height * SCALE)) / 2)
-        };
+            float((GetScreenWidth() - (imgTexture.width*SCALE)) / 2),
+            float((GetScreenHeight() - (imgTexture.height*SCALE)) / 2)};
         DrawTextureEx(imgTexture, COORDS, 0, SCALE, WHITE);
     }
 
     ~comp() {
-        if (imgTexture.id != 0) {
+        if (imgTexture.id != 0)
             UnloadTexture(imgTexture);
-        }
     }
 };
 
 class Button : public comp {
 protected:
-    Texture2D pressedImgTexture = { 0 };
-    Texture2D unpressedImgTexture = { 0 };
+    Texture2D pressedImgTexture = {0};
+    Texture2D unpressedImgTexture = {0};
 
 public:
     Button() : comp() {}
-    
-  
+
     void setTexture(string unpressedPath, string pressedPath) {
         Image img1 = LoadImage(unpressedPath.c_str());
         Image img2 = LoadImage(pressedPath.c_str());
@@ -176,9 +137,8 @@ public:
         unpressedImgTexture.height = buttonHeight;
         unpressedImgTexture.width = buttonWidth;
         pressedImgTexture.height = buttonHeight;
-        pressedImgTexture.width =buttonWidth;
+        pressedImgTexture.width = buttonWidth;
         imgTexture = unpressedImgTexture;
-         
 
         UnloadImage(img1);
         UnloadImage(img2);
@@ -189,146 +149,322 @@ public:
             coords.x,
             coords.y,
             float(imgTexture.width * SCALE),
-            float(imgTexture.height * SCALE)
-        };
+            float(imgTexture.height * SCALE)};
 
         if (CheckCollisionPointRec(GetMousePosition(), bounds)) {
             imgTexture = pressedImgTexture;
-            SetMouseCursor(MOUSE_CURSOR_POINTING_HAND);
-          
+    
         } else {
             imgTexture = unpressedImgTexture;
-            SetMouseCursor(MOUSE_CURSOR_DEFAULT);
+            
         }
-        
     }
+
     virtual void click() = 0;
-    void handleEvent(){
+
+    void handleEvent() {
         draw();
         hover();
-        click();
-
+    
+        Rectangle bounds = {
+            coords.x,
+            coords.y,
+            float(imgTexture.width),
+            float(imgTexture.height)
+        };
+    
+        if (CheckCollisionPointRec(GetMousePosition(), bounds) && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+            click();
+        }
     }
+    
 
     ~Button() {
-        if (pressedImgTexture.id != 0) UnloadTexture(pressedImgTexture);
-        if (unpressedImgTexture.id != 0) UnloadTexture(unpressedImgTexture);
+        if (pressedImgTexture.id != 0)
+            UnloadTexture(pressedImgTexture);
+        if (unpressedImgTexture.id != 0)
+            UnloadTexture(unpressedImgTexture);
     }
 };
-class playButton : public Button{
-    public:
-    void click(){
-    gameSTATE = PLAY;
-    }
-};
-class selectMode: public Button{
-    public:
-    void click(){
-    gameSTATE = MODE;
-    }
-};
-class selectTheme: public Button{
 
-    public:
-    void click(){
-    gameSTATE = THEME;
-    }
-
-
-};
-class settings: public Button{
-
-    public:
-
-    void click(){
-    gameSTATE = SETTINGS;
-    }
-
-};
-class exit: public Button{
-
-    public:
-    void click(){
-    gameSTATE = EXIT;
-    }
-
-
-};
-
-class DialogueBox  : public comp{
-
-private:
-    vector<Button*>Buttons;
-    void calcPositions(){
-
-        float xoffset = 21.3;
-        float yoffset = 67.0;
-        Vector2 SIZE = {buttonHeight,buttonWidth};
-        Vector2 COORDS;
-        for (int i = 0;i<Buttons.size();i++)
-        {
-            
-            Buttons[i].setSize(SIZE);
-            COORDS = {xoffset += (Buttons[i].getSize().x) ,yoffset  +  (Buttons[i].getSize().y)};
-            Buttons[i].setCoords(COORDS);
-        }
-    
-    
-    }
+class playButton : public Button {
 public:
-DialogueBox() : comp(){
-    calcPositions();
-}
-void setButton(Button BTN){
-Buttons.push_back(BTN);
-}
+    void click() { gameSTATE = PLAY; }
+};
 
-void draw(){
+class selectMode : public Button {
+public:
+    void click() { gameSTATE = MODE; }
+};
+
+class selectTheme : public Button {
+public:
+    void click() { gameSTATE = THEME; }
+};
+
+class settings : public Button {
+public:
+    void click() { gameSTATE = SETTINGS; }
+};
+
+class ExitButton : public Button {
+public:
+ExitButton() : Button(){}
+    void click() { gameSTATE = EXIT; }
+};
+
+class DialogueBox : public comp {
+protected:
+    vector<Button *> Buttons;
+
+public:
+    DialogueBox() : comp() {}
+    DialogueBox(Vector2 coords, Texture2D texture) : comp(coords, texture) {}
+
+    virtual void calcPositions() = 0;
+    virtual void setButton(Button *BTN) = 0;
+
+    vector<Button*> getButtons() const { return Buttons; }
+
+    void draw() {
         comp::draw('c');
-        
-        for (int i = 0;i<Buttons.size();i++)
-        {
-          Buttons[i]->draw();
+        for (size_t i = 0; i < Buttons.size(); i++) {
+            Buttons[i]->handleEvent();
         }
-        
+    }
+};
 
+class MenuDialogue : public DialogueBox {
+public:
+    MenuDialogue() : DialogueBox() {}
+    MenuDialogue(Vector2 coords, Texture2D texture) : DialogueBox(coords, texture) {}
+
+    void setButton(Button *BTN) {
+        if (Buttons.size() < 5) {
+            Buttons.push_back(BTN);
+        }
+    }
+
+    virtual void calcPositions() {
+        float xoffset = 21.3f + 700.0f;
+        float yoffset = 67.0f + 152.0f;
+        Vector2 SIZE = {buttonWidth, buttonHeight}; // unscaled — will be scaled inside setSize()
+        Vector2 COORDS;
+    
+        for (size_t i = 0; i < Buttons.size(); i++) {
+            Buttons[i]->setSize(SIZE);         // does scaling for size
+            COORDS = {xoffset, yoffset};
+            Buttons[i]->setCoords(COORDS);     // scaling applied here
+            yoffset += (Buttons[i]->getSize().y / SCALE) + 67.0f;  // adjust using unscaled size
+        }
+    }
+    
+};
+
+class ThemeDialogue : public DialogueBox {
+private:
+    vector<comp> themeImages;
+    int imageCount;
+
+public:
+    ThemeDialogue() : DialogueBox(), imageCount(0) {}
+    ThemeDialogue(Vector2 coords, Texture2D texture) : DialogueBox(coords, texture), imageCount(0) {}
+
+    void setButton(Button *BTN) {
+        if (Buttons.size() < 3) {
+            Buttons.push_back(BTN);
+        }
+    }
+
+    void setImage(string path) {
+        if (themeImages.size() < 3) {
+            comp newImage;
+            newImage.setTexture(path);
+            themeImages.push_back(newImage);
+            imageCount++;
+        }
+    }
+
+    vector<comp> getThemeImages() const { return themeImages; }
+
+     void calcPositions() {
+        // Custom layout logic can be added later
+    }
+
+    void draw() {
+        DialogueBox::draw();
+        for (unsigned int i = 0; i < themeImages.size(); i++) {
+            themeImages[i].draw();
+        }
+    }
+};
+
+class CloseButton : public Button{
+    public:
+    void click(){
+
+        gameSTATE = LOBBY;
+
+
+    }
+};
+class ModeDialogue : public DialogueBox{
+
+protected:
+CloseButton closeBTN;
+public:
+
+void setButton(Button *BTN) {
+    if (Buttons.size() < 3) {
+        Buttons.push_back(BTN);
+    }
 }
+void setCloseBTN(CloseButton BTN){
+    closeBTN = BTN;
+}
+virtual void calcPositions() {
+    float xoffset = 40.0f + 750.0f;
+    float yoffset = 100.0f + 75.0f;
+    Vector2 SIZE = {buttonWidth, buttonHeight}; // unscaled — will be scaled inside setSize()
+    Vector2 COORDS;
 
-
-
+    for (size_t i = 0; i < Buttons.size(); i++) {
+        Buttons[i]->setSize(SIZE);         // does scaling for size
+        COORDS = {xoffset, yoffset};
+        Buttons[i]->setCoords(COORDS);     // scaling applied here
+        yoffset += (Buttons[i]->getSize().y / SCALE) + 40.0f;  // adjust using unscaled size
+    }
+}
 
 
 
 };
 
+class onlineButton:public Button{
+    public:
+    void click(){
+        gameMODE = ONLINE;
+    }
+};
+class offlineButton:public Button{
+    public:
+    void click(){
+        gameMODE = OFFLINE;
+    }
+};
+class computerButton:public Button{
+    public:
+    void click(){
+        gameMODE = COMPUTER;
+    }
+};
+void makeLobby(MenuDialogue& menu,
+    playButton& playBTN,
+    selectMode& modeBTN,
+    selectTheme& themeBTN,
+    settings& settingsBTN,
+    ExitButton& exitBTN) 
+{
+    calcScale();
+playBTN.setTexture("assets/menu/play_u.png", "assets/menu/play_p.png");
+modeBTN.setTexture("assets/menu/mode_u.png", "assets/menu/mode_p.png");
+settingsBTN.setTexture("assets/menu/settings_u.png", "assets/menu/settings_p.png");
+themeBTN.setTexture("assets/menu/theme_u.png", "assets/menu/theme_p.png");
+exitBTN.setTexture("assets/menu/exit_u.png", "assets/menu/exit_p.png");
 
-class Player{
+menu.setTexture("assets/menu/mmenu.png");
 
-    private:
-    string playerName;
-    gameMode Mode;
-    gameTHEME Theme;
-    settings playerSettings;
-    // Paddle class
-    // Ball class
-    };
+menu.setButton(&playBTN);
+menu.setButton(&modeBTN);
+menu.setButton(&themeBTN);
+menu.setButton(&settingsBTN);
+menu.setButton(&exitBTN);
+
+menu.calcPositions();
+
+}
+
+void initiateLobby(MenuDialogue &menu,comp &bg){
+    bg.draw();
+    menu.draw();
+
+}
+
+void makeModeDialogue(ModeDialogue &mode,onlineButton &btn1,offlineButton &btn2,computerButton &btn3){
+
+mode.setTexture("assets/modeDialogue/mode.png");
+btn1.setTexture("assets/modeDialogue/online_u.png","assets/modeDialogue/online_p.png");
+btn2.setTexture("assets/modeDialogue/offline_u.png","assets/modeDialogue/offline_p.png");
+btn3.setTexture("assets/modeDialogue/computer_u.png","assets/modeDialogue/computer_p.png");
+mode.setButton(&btn1);
+mode.setButton(&btn2);
+mode.setButton(&btn3);
+mode.calcPositions();
+
+}
+void initiateModeDialogue(ModeDialogue &mode,comp &bg){
+    bg.draw();
+    mode.draw();
+
+}
 
 
 
 int main() {
-    InitWindow(1920, 1080, "LOBBY SCREEN");
-    SetTargetFPS(60);
-    calcScale();
+    InitWindow(1280.0f, 720.0f, "LOBBY SCREEN");
+    SetTargetFPS(400);
+    
+
     comp bg;
-  
+    MenuDialogue menu;
+    playButton playBTN;
+    selectMode modeBTN;
+    selectTheme themeBTN;
+    settings settingsBTN;
+    ExitButton exitBTN;
+    CloseButton closeBTN;
+    ModeDialogue mode;
+    onlineButton onlineBTN;
+    offlineButton offlineBTN;
+    computerButton computerBTN;
+    bg.setTexture("assets/bgg.png");
+
+
+    makeLobby(menu, playBTN, modeBTN, themeBTN, settingsBTN, exitBTN);
+    makeModeDialogue(mode,onlineBTN,offlineBTN,computerBTN);
 
     while (!WindowShouldClose()) {
+        
 
         BeginDrawing();
-        ClearBackground(RAYWHITE);
+        switch (gameSTATE) {
+        case LOBBY:
+        initiateLobby(menu,bg);
 
+            break;
+        case EXIT:
+            CloseWindow();
+            return 0;
+        case PLAY:
+            // Gameplay state here
+            break;
+        case MODE:
+            initiateModeDialogue(mode,bg);
+            
+            break;
+        case THEME:
+            // Theme selection here
+            break;
+        case SETTINGS:
+            // Settings dialog here
+            break;
+        }
+    
         EndDrawing();
+
+       
     }
+    
 
     CloseWindow();
     return 0;
