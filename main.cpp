@@ -288,7 +288,7 @@ public:
     vector<comp> getThemeImages() const { return themeImages; }
 
      void calcPositions() {
-        // Custom layout logic can be added later
+
     }
 
     void draw() {
@@ -298,20 +298,10 @@ public:
         }
     }
 };
-
-class CloseButton : public Button{
-    public:
-    void click(){
-
-        gameSTATE = LOBBY;
-
-
-    }
-};
 class ModeDialogue : public DialogueBox{
 
 protected:
-CloseButton closeBTN;
+
 public:
 
 void setButton(Button *BTN) {
@@ -319,12 +309,9 @@ void setButton(Button *BTN) {
         Buttons.push_back(BTN);
     }
 }
-void setCloseBTN(CloseButton BTN){
-    closeBTN = BTN;
-}
 virtual void calcPositions() {
-    float xoffset = 40.0f + 750.0f;
-    float yoffset = 100.0f + 75.0f;
+    float xoffset = 40.0f + 700.0f;
+    float yoffset = 60.0f + 325.0f ;
     Vector2 SIZE = {buttonWidth, buttonHeight}; // unscaled — will be scaled inside setSize()
     Vector2 COORDS;
 
@@ -332,7 +319,7 @@ virtual void calcPositions() {
         Buttons[i]->setSize(SIZE);         // does scaling for size
         COORDS = {xoffset, yoffset};
         Buttons[i]->setCoords(COORDS);     // scaling applied here
-        yoffset += (Buttons[i]->getSize().y / SCALE) + 40.0f;  // adjust using unscaled size
+        yoffset += (Buttons[i]->getSize().y / SCALE) + 50.0f;  // adjust using unscaled size
     }
 }
 
@@ -344,18 +331,21 @@ class onlineButton:public Button{
     public:
     void click(){
         gameMODE = ONLINE;
+        gameSTATE = LOBBY;
     }
 };
 class offlineButton:public Button{
     public:
     void click(){
         gameMODE = OFFLINE;
+        gameSTATE = LOBBY;
     }
 };
 class computerButton:public Button{
     public:
     void click(){
         gameMODE = COMPUTER;
+        gameSTATE = LOBBY;
     }
 };
 void makeLobby(MenuDialogue& menu,
@@ -422,7 +412,6 @@ int main() {
     selectTheme themeBTN;
     settings settingsBTN;
     ExitButton exitBTN;
-    CloseButton closeBTN;
     ModeDialogue mode;
     onlineButton onlineBTN;
     offlineButton offlineBTN;
