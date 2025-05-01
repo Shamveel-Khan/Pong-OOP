@@ -434,32 +434,18 @@ int main(void)
             float dummy;
             networkReceiveState(host, &ballState.x, &ballState.y, &ballState.p1, &dummy);
             cout << "Received: " << ballState.x << " " << ballState.y << " " << ballState.p1 << "\n";
+
             ballState.x *= screenWidth;
             ballState.y *= screenHeight;
             ballState.p1 *= screenHeight;
-            if (!(std::isinf(ballState.p1) || std::isnan(ballState.p1)) && !(std::isinf(ballState.x) || std::isnan(ballState.x)) && !(std::isinf(ballState.y) || std::isnan(ballState.y)) && ballState.x > 0 && ballState.x < screenWidth && ballState.y > 0 && ballState.y < screenHeight && ballState.p1 >= 0 && ballState.p1 < screenHeight)
+
+            if (!(std::isinf(ballState.p1) || std::isnan(ballState.p1)) &&
+                !(std::isinf(ballState.x) || std::isnan(ballState.x)) &&
+                !(std::isinf(ballState.y) || std::isnan(ballState.y)) &&
+                ballState.x > 0 && ballState.x < screenWidth &&
+                ballState.y > 0 && ballState.y < screenHeight &&
+                ballState.p1 >= 0 && ballState.p1 < screenHeight)
             {
-
-                snaps[0] = snaps[1];
-                snaps[1] = {ballState.p1, ballState.x, ballState.y, now};
-                double renderTime = now - DELAY;
-                double dt = snaps[1].time - snaps[0].time;
-                float drawY = snaps[1].positionY;
-                float drawBallX = snaps[1].ballX;
-                float drawBallY = snaps[1].ballY;
-
-                if (dt > 0)
-                {
-                    float t = float((renderTime - snaps[0].time) / dt);
-                    if (t < 0)
-                        t = 0;
-                    else if (t > 1)
-                        t = 1;
-
-                    drawY = snaps[0].positionY + (snaps[1].positionY - snaps[0].positionY) * t;
-                    float drawBallX = snaps[0].ballX + (snaps[1].ballX - snaps[0].ballX) * t;
-                    float drawBallY = snaps[0].ballY + (snaps[1].ballY - snaps[0].ballY) * t;
-                }
                 left.setPositionY(ballState.p1);
                 gameBall.setPositionX(ballState.x);
                 gameBall.setPositionY(ballState.y);

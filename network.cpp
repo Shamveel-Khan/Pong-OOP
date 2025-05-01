@@ -101,7 +101,7 @@ int networkSendState(ENetHost *host, ENetPeer *peer, float x, float y, float ser
     sts.y = y;
     sts.serverPaddle = serverPaddle;
     sts.clientPaddle = clientPaddle;
-    ENetPacket *gts = enet_packet_create(&sts, sizeof(state), ENET_PACKET_FLAG_UNRELIABLE_FRAGMENT);
+    ENetPacket *gts = enet_packet_create(&sts, sizeof(state),0);
     if (peer)
     {
         enet_peer_send(peer, 0, gts);

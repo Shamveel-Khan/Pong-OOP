@@ -1,0 +1,12 @@
+works okayish(1) with interpolation + ENET_PACKET_FLAG_RELIABLE | ENET_PACKET_FLAG_UNSEQUENCED  
+
+works okayish(0.8) with inpolation + ENET_PACKET_FLAG_UNSEQUENCED  
+
+works better (1.2) with no interpolation + ENET_PACKET_FLAG_UNSEQUENCED  
+
+works better(1.1) with no interpolation + ENET_PACKET_FLAG_RELIABLE | ENET_PACKET_FLAG_UNSEQUENCED  
+
+works better(1.1) with no interpolation + ENET_PACKET_FLAG_RELIABLE
+
+works best(1.3) with no interpolation + ENET_PACKET_FLAG_UNRELIABLE (flag : 0)
+
