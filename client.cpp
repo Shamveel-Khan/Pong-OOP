@@ -331,7 +331,8 @@ int main(void)
     cin >> ip;
     int choice;
     cout << "enter your choice: \n";
-    cout << "1 for underWater\n2 for fire and ice\n";
+    cout << "1 for underWater\n2 for fire and ice\n3 for forest and wood\n";
+    cout << "4 for neon\n5 for futuristic\n6 for space galaxy\n\n";
     cin >> choice;
     string mode2;
     switch (choice)
@@ -342,6 +343,18 @@ int main(void)
     case 2:
         mode2 = "fireAndIce/";
         break;
+    case 3:
+        mode2 = "forestAndWood/";
+        break;
+    case 4:
+        mode2 = "neon/";
+        break;
+    case 5:
+        mode2 = "futuristic/";
+        break;
+    case 6:
+        mode2 = "spacegalaxy/";
+        break; 
     default:
         mode2 = "underWater/";
         break;

@@ -51,7 +51,7 @@ bool checkPause(bool isHover, Color *buttonColor, ENetHost *host)
     }
     return isPaused;
 }
-// TODO: add scoreboard to client and make it consistent in themes
+
 class scoreBoard
 {
     int scoreLeft;
@@ -331,6 +331,7 @@ int main(void)
     int choice;
     cout << "enter your choice: \n";
     cout << "1 for underWater\n2 for fire and ice\n3 for forest and wood\n";
+    cout << "4 for neon\n5 for futuristic\n6 for space galaxy\n\n";
     cin >> choice;
     string mode2;
     switch (choice)
@@ -344,6 +345,15 @@ int main(void)
     case 3:
         mode2 = "forestAndWood/";
         break;
+    case 4:
+        mode2 = "neon/";
+        break;
+    case 5:
+        mode2 = "futuristic/";
+        break;
+    case 6:
+        mode2 = "spacegalaxy/";
+        break; 
     default:
         mode2 = "underWater/";
         break;
