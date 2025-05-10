@@ -20,7 +20,6 @@ using namespace std;
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 
-#define IS_CLIENT 1
 
 int screenHeight = 570, screenWidth = 600; // Adjusted for top bar
 bool isPaused = false;                     // Global pause state
@@ -33,21 +32,13 @@ struct state
     float p1;
 };
 
-struct snapshot
-{
-    float positionY;
-    float ballX;
-    float ballY;
-    double time;
-};
-
 float Clamp(float value, float min, float max)
 {
     return (value < min) ? min : (value > max) ? max
                                                : value;
 }
 
-bool checkPause(bool isHover, Color *buttonColor, ENetPeer *peer, ENetHost *host)
+bool checkPauseC(bool isHover, Color *buttonColor, ENetPeer *peer, ENetHost *host)
 {
     if (isHover)
     {
@@ -65,13 +56,13 @@ bool checkPause(bool isHover, Color *buttonColor, ENetPeer *peer, ENetHost *host
     return isPaused;
 }
 
-class scoreBoard
+class scoreBoardC
 {
     int scoreLeft;
     int scoreRight;
 
 public:
-    scoreBoard()
+    scoreBoardC()
     {
         scoreLeft = 0;
         scoreRight = 0;
@@ -124,19 +115,19 @@ public:
     }
 };
 
-class theme
+class themeC
 {
-    Color ballColor;
+    Color ballCColor;
     Texture2D pi;
     Color background;
     Color border;
     Rectangle boundaries;
     int borderWidth;
-    // TODO: add scoreboard to client and make it consistent in themes
+    // TODO: add scoreBoardC to client and make it consistent in themeCs
 public:
-    theme(Color b, Color ba, Color bo, Rectangle bou, int bw, string name)
+    themeC(Color b, Color ba, Color bo, Rectangle bou, int bw, string name)
     {
-        ballColor = b;
+        ballCColor = b;
         background = ba;
         border = bo;
         boundaries = bou;
@@ -165,17 +156,17 @@ public:
     {
         return borderWidth;
     }
-    Color getBallColor()
+    Color getballCColor()
     {
-        return ballColor;
+        return ballCColor;
     }
-    ~theme()
+    ~themeC()
     {
         UnloadTexture(pi);
     }
 };
 
-class paddle
+class paddleC
 {
     int height;
     int width;
@@ -185,7 +176,7 @@ class paddle
     Color color;
 
 public:
-    paddle(int x, int y, Color c, int h, int w, string name)
+    paddleC(int x, int y, Color c, int h, int w, string name)
     {
         positionX = x;
         positionY = y;
@@ -211,7 +202,7 @@ public:
     {
         return positionY;
     }
-    void drawPaddle()
+    void drawpaddleC()
     {
         DrawTexture(skin, positionX, positionY, WHITE);
     }
@@ -228,31 +219,31 @@ public:
         Rectangle r = {(float)positionX, (float)positionY, (float)width, (float)height};
         return r;
     }
-    ~paddle()
+    ~paddleC()
     {
         UnloadTexture(skin);
     }
 };
 
-class ball
+class ballC
 {
     int positionX;
     int positionY;
     int radius;
-    int ballSpeedX;
-    int ballSpeedY;
+    int ballCSpeedX;
+    int ballCSpeedY;
     Color color;
     Texture2D skin;
 
 public:
-    ball(int x, int y, int r, Color c, int speedX, int speedY, string name)
+    ballC(int x, int y, int r, Color c, int speedX, int speedY, string name)
     {
         positionX = x;
         positionY = y;
         radius = r;
         color = c;
-        ballSpeedX = speedX;
-        ballSpeedY = speedY;
+        ballCSpeedX = speedX;
+        ballCSpeedY = speedY;
 
         Image skinImg = LoadImage(name.c_str());
         if (skinImg.data == NULL)
@@ -264,7 +255,7 @@ public:
         skin = LoadTextureFromImage(skinImg);
         UnloadImage(skinImg);
     }
-    void drawBall()
+    void drawballC()
     {
         DrawTexture(skin, positionX - radius, positionY - radius, WHITE);
     }
@@ -276,13 +267,13 @@ public:
     {
         positionY = y;
     }
-    int getBallSpeedX()
+    int getballCSpeedX()
     {
-        return ballSpeedX;
+        return ballCSpeedX;
     }
-    int getBallSpeedY()
+    int getballCSpeedY()
     {
-        return ballSpeedY;
+        return ballCSpeedY;
     }
     int getPositionX()
     {
@@ -296,7 +287,7 @@ public:
     {
         if (positionX + radius >= screenWidth || positionX - radius <= 0)
         {
-            ballSpeedX *= -1;
+            ballCSpeedX *= -1;
             if (positionX + radius >= screenWidth)
             {
                 (*score2)++;
@@ -308,23 +299,23 @@ public:
         }
         if (positionY + radius >= screenHeight + 25 || positionY - radius <= 25)
         {
-            ballSpeedY *= -1;
+            ballCSpeedY *= -1;
         }
         if (CheckCollisionCircleRec((Vector2){(float)positionX, (float)positionY}, radius, leftRec) ||
             CheckCollisionCircleRec((Vector2){(float)positionX, (float)positionY}, radius, rightRec))
         {
-            ballSpeedX *= -1;
+            ballCSpeedX *= -1;
         }
-        positionX += ballSpeedX;
-        positionY += ballSpeedY;
+        positionX += ballCSpeedX;
+        positionY += ballCSpeedY;
     }
-    ~ball()
+    ~ballC()
     {
         UnloadTexture(skin);
     }
 };
 
-int main(void)
+int runClient()
 {
     cout << "Enter ip: ";
     string ip;
@@ -366,9 +357,9 @@ int main(void)
         printf("Failed to initialize network\n");
         return 1;
     }
-    scoreBoard score;
+    scoreBoardC score;
     int oldSW = screenWidth, oldSH = screenHeight;
-    state ballState = {(float)screenWidth / 2, (float)screenHeight / 2, (float)screenHeight / 2, (float)screenHeight / 2};
+    state ballCState = {(float)screenWidth / 2, (float)screenHeight / 2, (float)screenHeight / 2, (float)screenHeight / 2};
     int signX = 1;
     int signY = 1;
     const double DELAY = 0.1;
@@ -376,26 +367,18 @@ int main(void)
     InitWindow(screenWidth, screenHeight + 30, "Client - Multiplayer Pong"); // Include top bar
     SetTargetFPS(60);
     SetWindowState(FLAG_WINDOW_RESIZABLE);
-    snapshot snaps[2] = {{float(screenHeight / 2 - (int)(screenHeight * 0.165f / 2)),
-                          (ballState.x * ((float)screenWidth / oldSW)),
-                          (ballState.y * ((float)screenHeight / oldSH)),
-                          now},
-                         {float(screenHeight / 2 - (int)(screenHeight * 0.165f / 2)),
-                          (ballState.x * ((float)screenWidth / oldSW)),
-                          (ballState.y * ((float)screenHeight / oldSH)),
-                          now}};
 
     Color background = {50, 168, 82, 255};
     Rectangle border = {0, 25, (float)screenWidth, (float)screenHeight}; // Play area starts at Y=25
-    theme classic(RED, background, YELLOW, border, 5, mode + mode2 + "background.png");
+    themeC classic(RED, background, YELLOW, border, 5, mode + mode2 + "background.png");
 
-    paddle left(classic.getBorderWidth() + 5, screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE,
+    paddleC left(classic.getBorderWidth() + 5, screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE,
                 (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode + mode2 + "paddle.png");
-    paddle right(screenWidth - 10 - (int)(screenWidth * 0.02f), screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE,
+    paddleC right(screenWidth - 10 - (int)(screenWidth * 0.02f), screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE,
                  (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode + mode2 + "paddle.png");
 
-    ball gameBall((ballState.x * ((float)screenWidth / oldSW)), (ballState.y * ((float)screenHeight / oldSH)),
-                  (screenWidth * 0.02f), classic.getBallColor(),
+    ballC gameballC((ballCState.x * ((float)screenWidth / oldSW)), (ballCState.y * ((float)screenHeight / oldSH)),
+                  (screenWidth * 0.02f), classic.getballCColor(),
                   (screenWidth * 0.007f), (screenHeight * 0.005f), mode + mode2 + "ball.png");
 
     Color buttonColor = WHITE;
@@ -410,67 +393,67 @@ int main(void)
             oldSH = screenHeight;
             screenWidth = GetScreenWidth();
             screenHeight = GetScreenHeight() - 30; // Adjust for top bar
-            int signSpeedX = (gameBall.getBallSpeedX() < 0) ? -1 : 1;
-            int signSpeedY = (gameBall.getBallSpeedY() < 0) ? -1 : 1;
+            int signSpeedX = (gameballC.getballCSpeedX() < 0) ? -1 : 1;
+            int signSpeedY = (gameballC.getballCSpeedY() < 0) ? -1 : 1;
 
-            float newBallX = ballState.x * ((float)screenWidth / oldSW);
-            float newBallY = ballState.y * ((float)screenHeight / oldSH);
-            int newBallRadius = (int)(screenWidth * 0.02f);
+            float newballCX = ballCState.x * ((float)screenWidth / oldSW);
+            float newballCY = ballCState.y * ((float)screenHeight / oldSH);
+            int newballCRadius = (int)(screenWidth * 0.02f);
 
             border = {0, 25, (float)screenWidth, (float)screenHeight};
-            classic.~theme();
-            gameBall.~ball();
-            left.~paddle();
-            right.~paddle();
-            new (&left) paddle(classic.getBorderWidth() + 5, screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE,
+            classic.~themeC();
+            gameballC.~ballC();
+            left.~paddleC();
+            right.~paddleC();
+            new (&left) paddleC(classic.getBorderWidth() + 5, screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE,
                                (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode + mode2 + "paddle.png");
 
-            new (&right) paddle(screenWidth - 10 - (int)(screenWidth * 0.02f), screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE,
+            new (&right) paddleC(screenWidth - 10 - (int)(screenWidth * 0.02f), screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE,
                                 (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode + mode2 + "paddle.png");
 
-            new (&gameBall) ball((int)newBallX, (int)newBallY, newBallRadius, classic.getBallColor(),
+            new (&gameballC) ballC((int)newballCX, (int)newballCY, newballCRadius, classic.getballCColor(),
                                  (int)(signSpeedX * screenWidth * 0.007f), (int)(signSpeedY * screenHeight * 0.005f), mode + mode2 + "ball.png");
 
-            new (&classic) theme(RED, background, YELLOW, border, 5, mode + mode2 + "background.png");
+            new (&classic) themeC(RED, background, YELLOW, border, 5, mode + mode2 + "background.png");
         }
 
         // Pause button interaction
         Vector2 mousePos = GetMousePosition();
         Rectangle button = {(float)screenWidth - 70, 5, 60, 15};
         bool isHover = CheckCollisionPointRec(mousePos, button);
-        isPaused = checkPause(isHover, &buttonColor, peer, host);
+        isPaused = checkPauseC(isHover, &buttonColor, peer, host);
 
         if (!isPaused)
         {
             networkSendState(host, peer, 0, 0, 0, (float)right.getPositionY() / screenHeight);
             cout << "Sent as: " << (float)right.getPositionY() / screenHeight << endl;
             float dummy;
-            networkReceiveState(host, &ballState.x, &ballState.y, &ballState.p1, &dummy);
-            cout << "Received: " << ballState.x << " " << ballState.y << " " << ballState.p1 << "\n";
+            networkReceiveState(host, &ballCState.x, &ballCState.y, &ballCState.p1, &dummy);
+            cout << "Received: " << ballCState.x << " " << ballCState.y << " " << ballCState.p1 << "\n";
 
-            ballState.x *= screenWidth;
-            ballState.y *= screenHeight;
-            ballState.p1 *= screenHeight;
+            ballCState.x *= screenWidth;
+            ballCState.y *= screenHeight;
+            ballCState.p1 *= screenHeight;
 
-            if (!(std::isinf(ballState.p1) || std::isnan(ballState.p1)) &&
-                !(std::isinf(ballState.x) || std::isnan(ballState.x)) &&
-                !(std::isinf(ballState.y) || std::isnan(ballState.y)) &&
-                ballState.x > 0 && ballState.x < screenWidth &&
-                ballState.y > 0 && ballState.y < screenHeight &&
-                ballState.p1 >= 0 && ballState.p1 < screenHeight)
+            if (!(std::isinf(ballCState.p1) || std::isnan(ballCState.p1)) &&
+                !(std::isinf(ballCState.x) || std::isnan(ballCState.x)) &&
+                !(std::isinf(ballCState.y) || std::isnan(ballCState.y)) &&
+                ballCState.x > 0 && ballCState.x < screenWidth &&
+                ballCState.y > 0 && ballCState.y < screenHeight &&
+                ballCState.p1 >= 0 && ballCState.p1 < screenHeight)
             {
-                left.setPositionY(ballState.p1);
-                gameBall.setPositionX(ballState.x);
-                gameBall.setPositionY(ballState.y);
+                left.setPositionY(ballCState.p1);
+                gameballC.setPositionX(ballCState.x);
+                gameballC.setPositionY(ballCState.y);
             }
 
             right.update();
             BeginDrawing();
             classic.drawBoard();
             score.drawBoard(choice);
-            left.drawPaddle();
-            right.drawPaddle();
-            gameBall.drawBall();
+            left.drawpaddleC();
+            right.drawpaddleC();
+            gameballC.drawballC();
 
             // Draw top bar elements
             time_t now = time(0);
@@ -497,4 +480,8 @@ int main(void)
     networkShutdown(host);
     CloseWindow();
     return 0;
+}
+
+int main() {
+    runClient();
 }

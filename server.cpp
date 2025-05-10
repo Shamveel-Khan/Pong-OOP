@@ -34,7 +34,7 @@ float Clamp(float value, float min, float max)
     return value;
 }
 
-bool checkPause(bool isHover, Color *buttonColor, ENetHost *host)
+bool checkPauseS(bool isHover, Color *buttonColor, ENetHost *host)
 {
     if (isHover)
     {
@@ -52,13 +52,13 @@ bool checkPause(bool isHover, Color *buttonColor, ENetHost *host)
     return isPaused;
 }
 
-class scoreBoard
+class scoreBoardS
 {
     int scoreLeft;
     int scoreRight;
 
 public:
-    scoreBoard()
+    scoreBoardS()
     {
         scoreLeft = 0;
         scoreRight = 0;
@@ -111,9 +111,9 @@ public:
     }
 };
 
-class theme
+class themeS
 {
-    Color ballColor;
+    Color ballSColor;
     Texture2D pic;
     Color background;
     Color border;
@@ -121,9 +121,9 @@ class theme
     int borderWidth;
 
 public:
-    theme(Color b, Color ba, Color bo, Rectangle bou, int bw, string name)
+    themeS(Color b, Color ba, Color bo, Rectangle bou, int bw, string name)
     {
-        ballColor = b;
+        ballSColor = b;
         border = bo;
         background = ba;
         boundaries = bou;
@@ -152,17 +152,17 @@ public:
     {
         return borderWidth;
     }
-    Color getBallColor()
+    Color getballSColor()
     {
-        return ballColor;
+        return ballSColor;
     }
-    ~theme()
+    ~themeS()
     {
         UnloadTexture(pic);
     }
 };
 
-class paddle
+class paddleS
 {
     int height;
     int width;
@@ -172,7 +172,7 @@ class paddle
     Color color;
 
 public:
-    paddle(int x, int y, Color c, int h, int w, string name)
+    paddleS(int x, int y, Color c, int h, int w, string name)
     {
         positionX = x;
         positionY = y;
@@ -198,7 +198,7 @@ public:
     {
         return positionY;
     }
-    void drawPaddle()
+    void drawpaddleS()
     {
         DrawTexture(skin, positionX, positionY, WHITE);
     }
@@ -218,31 +218,31 @@ public:
         Rectangle r = {(float)positionX, (float)positionY, (float)width, (float)height};
         return r;
     }
-    ~paddle()
+    ~paddleS()
     {
         UnloadTexture(skin);
     }
 };
 
-class ball
+class ballS
 {
     int positionX;
     int positionY;
     int radius;
-    int ballSpeedX;
-    int ballSpeedY;
+    int ballSSpeedX;
+    int ballSSpeedY;
     Color color;
     Texture2D skin;
 
 public:
-    ball(int x, int y, int r, Color c, int speedX, int speedY, string name)
+    ballS(int x, int y, int r, Color c, int speedX, int speedY, string name)
     {
         positionX = x;
         positionY = y;
         radius = r;
         color = c;
-        ballSpeedX = speedX;
-        ballSpeedY = speedY;
+        ballSSpeedX = speedX;
+        ballSSpeedY = speedY;
 
         Image skinImg = LoadImage(name.c_str());
         if (skinImg.data == NULL)
@@ -254,7 +254,7 @@ public:
         skin = LoadTextureFromImage(skinImg);
         UnloadImage(skinImg);
     }
-    void drawBall()
+    void drawballS()
     {
         DrawTexture(skin, positionX - radius, positionY - radius, WHITE);
     }
@@ -274,13 +274,13 @@ public:
     {
         return positionY;
     }
-    int getBallSpeedX()
+    int getballSSpeedX()
     {
-        return ballSpeedX;
+        return ballSSpeedX;
     }
-    int getBallSpeedY()
+    int getballSSpeedY()
     {
-        return ballSpeedY;
+        return ballSSpeedY;
     }
     int getRadius()
     {
@@ -290,7 +290,7 @@ public:
     {
         if (positionX + radius >= screenWidth || positionX - radius <= 0)
         {
-            ballSpeedX *= -1;
+            ballSSpeedX *= -1;
             if (positionX + radius >= screenWidth)
             {
                 (*score2)++;
@@ -302,17 +302,17 @@ public:
         }
         if (positionY + radius >= screenHeight + 25 || positionY - radius <= 25)
         {
-            ballSpeedY *= -1;
+            ballSSpeedY *= -1;
         }
         if (CheckCollisionCircleRec((Vector2){(float)positionX, (float)positionY}, radius, leftRec) ||
             CheckCollisionCircleRec((Vector2){(float)positionX, (float)positionY}, radius, rightRec))
         {
-            ballSpeedX *= -1;
+            ballSSpeedX *= -1;
         }
-        positionX += ballSpeedX;
-        positionY += ballSpeedY;
+        positionX += ballSSpeedX;
+        positionY += ballSSpeedY;
     }
-    ~ball()
+    ~ballS()
     {
         UnloadTexture(skin);
     }
@@ -326,7 +326,7 @@ struct state
     float p2;
 };
 
-int main(void)
+int runServer()
 {
     int choice;
     cout << "enter your choice: \n";
@@ -367,20 +367,20 @@ int main(void)
     SetWindowState(FLAG_WINDOW_RESIZABLE);
 
     Rectangle border = {0, 25, (float)screenWidth, (float)screenHeight};
-    theme classic(RED, BLACK, YELLOW, border, 5, mode + mode2 + "background.png");
-    paddle left(10, screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE, (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode + mode2 + "paddle.png");
-    paddle right(screenWidth - 30, screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE, (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode + mode2 + "paddle.png");
-    scoreBoard score;
+    themeS classic(RED, BLACK, YELLOW, border, 5, mode + mode2 + "background.png");
+    paddleS left(10, screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE, (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode + mode2 + "paddle.png");
+    paddleS right(screenWidth - 30, screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE, (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode + mode2 + "paddle.png");
+    scoreBoardS score;
 
-    ball gameBall(oldSW / 2, oldSH / 2, (screenWidth * 0.02f), classic.getBallColor(), (screenWidth * 0.007f), (screenHeight * 0.005f), mode + mode2 + "ball.png");
+    ballS gameballS(oldSW / 2, oldSH / 2, (screenWidth * 0.02f), classic.getballSColor(), (screenWidth * 0.007f), (screenHeight * 0.005f), mode + mode2 + "ball.png");
     state sts;
     state dummy = {0, 0, 0, 0};
 
     ENetHost *host = NULL;
     ENetPeer *peer = NULL;
     networkInitialize(MODE_SERVER, NULL, &host, &peer);
-    sts.x = gameBall.getPositionX();
-    sts.y = gameBall.getPositionY();
+    sts.x = gameballS.getPositionX();
+    sts.y = gameballS.getPositionY();
     sts.p1 = left.getPositionY();
     sts.p2 = right.getPositionY();
 
@@ -396,40 +396,40 @@ int main(void)
             screenWidth = GetScreenWidth();
             screenHeight = GetScreenHeight() - 30;
             button = {(float)screenWidth - 70, 5, 60, 15};
-            int signSpeedX = (gameBall.getBallSpeedX() < 0) ? -1 : 1;
-            int signSpeedY = (gameBall.getBallSpeedY() < 0) ? -1 : 1;
+            int signSpeedX = (gameballS.getballSSpeedX() < 0) ? -1 : 1;
+            int signSpeedY = (gameballS.getballSSpeedY() < 0) ? -1 : 1;
 
-            float newBallX = sts.x * ((float)screenWidth / oldSW);
-            float newBallY = sts.y * ((float)screenHeight / oldSH);
-            int newBallRadius = (int)(screenWidth * 0.02f);
+            float newballSX = sts.x * ((float)screenWidth / oldSW);
+            float newballSY = sts.y * ((float)screenHeight / oldSH);
+            int newballSRadius = (int)(screenWidth * 0.02f);
 
-            // Clamp ball position within the new screen bounds.
-            if (gameBall.getPositionX() < newBallRadius)
-                gameBall.setPositionX(newBallRadius);
-            if (gameBall.getPositionX() > screenWidth - newBallRadius)
-                gameBall.setPositionX(screenWidth - newBallRadius);
-            if (gameBall.getPositionY() < newBallRadius)
-                gameBall.setPositionY(newBallRadius);
-            if (gameBall.getPositionY() > screenHeight - 25 - newBallRadius)
-                gameBall.setPositionY(screenHeight - 25 - newBallRadius);
+            // Clamp ballS position within the new screen bounds.
+            if (gameballS.getPositionX() < newballSRadius)
+                gameballS.setPositionX(newballSRadius);
+            if (gameballS.getPositionX() > screenWidth - newballSRadius)
+                gameballS.setPositionX(screenWidth - newballSRadius);
+            if (gameballS.getPositionY() < newballSRadius)
+                gameballS.setPositionY(newballSRadius);
+            if (gameballS.getPositionY() > screenHeight - 25 - newballSRadius)
+                gameballS.setPositionY(screenHeight - 25 - newballSRadius);
 
-            // Update the border and re-create the theme with the new board dimensions.
+            // Update the border and re-create the themeS with the new board dimensions.
             border = {0, 25, (float)screenWidth, (float)screenHeight};
 
-            classic.~theme();
-            gameBall.~ball();
-            left.~paddle();
-            right.~paddle();
-            new (&left) paddle(classic.getBorderWidth() + 5, screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE,
+            classic.~themeS();
+            gameballS.~ballS();
+            left.~paddleS();
+            right.~paddleS();
+            new (&left) paddleS(classic.getBorderWidth() + 5, screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE,
                                (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode + mode2 + "paddle.png");
 
-            new (&right) paddle(screenWidth - 10 - (int)(screenWidth * 0.02f), screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE,
+            new (&right) paddleS(screenWidth - 10 - (int)(screenWidth * 0.02f), screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE,
                                 (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode + mode2 + "paddle.png");
 
-            new (&gameBall) ball((int)newBallX, (int)newBallY, newBallRadius, classic.getBallColor(),
+            new (&gameballS) ballS((int)newballSX, (int)newballSY, newballSRadius, classic.getballSColor(),
                                  (int)(signSpeedX * screenWidth * 0.007f), (int)(signSpeedY * screenHeight * 0.005f), mode + mode2 + "ball.png");
 
-            new (&classic) theme(RED, BLACK, YELLOW, border, 5, mode + mode2 + "background.png");
+            new (&classic) themeS(RED, BLACK, YELLOW, border, 5, mode + mode2 + "background.png");
         }
         time_t now = time(0);
         struct tm *localTime = localtime(&now);
@@ -438,12 +438,12 @@ int main(void)
 
         Vector2 pos = GetMousePosition();
         bool isHover = CheckCollisionPointRec(pos, button);
-        isPaused = checkPause(isHover, &buttonColor, host);
+        isPaused = checkPauseS(isHover, &buttonColor, host);
         if (!isPaused)
         {
             // Update current state (used for networking position scaling).
-            sts.x = gameBall.getPositionX();
-            sts.y = gameBall.getPositionY();
+            sts.x = gameballS.getPositionX();
+            sts.y = gameballS.getPositionY();
             sts.p1 = left.getPositionY();
             sts.p2 = right.getPositionY();
 
@@ -454,21 +454,21 @@ int main(void)
             if (!((std::isinf(dummy.p2) || std::isnan(dummy.p2))) && dummy.p2 >= 0 && dummy.p2 <= screenHeight)
                 right.setPositionY((int)dummy.p2);
 
-            gameBall.update(left.getRec(), right.getRec(), score.getScore1(), score.getScore2());
+            gameballS.update(left.getRec(), right.getRec(), score.getScore1(), score.getScore2());
             left.update();
             right.update();
 
-            networkSendState(host, NULL, (float)gameBall.getPositionX() / screenWidth,
-                             (float)gameBall.getPositionY() / screenHeight, (float)left.getPositionY() / screenHeight, (float)right.getPositionY());
+            networkSendState(host, NULL, (float)gameballS.getPositionX() / screenWidth,
+                             (float)gameballS.getPositionY() / screenHeight, (float)left.getPositionY() / screenHeight, (float)right.getPositionY());
 
             BeginDrawing();
             DrawRectangle(0, 0, screenWidth, 25, BLACK);
             DrawText(TextFormat("Current Time: %s", buffer), 10, 5, 20, WHITE);
             classic.drawBoard(screenWidth, screenHeight);
             score.drawBoard(choice);
-            left.drawPaddle();
-            right.drawPaddle();
-            gameBall.drawBall();
+            left.drawpaddleS();
+            right.drawpaddleS();
+            gameballS.drawballS();
             DrawRectangleRec(button, buttonColor);
             DrawText("Pause", screenWidth - 65, 5, 15, WHITE);
             EndDrawing();
@@ -488,4 +488,8 @@ int main(void)
     networkShutdown(host);
     CloseWindow();
     return 0;
+}
+
+int main() {
+    runServer();
 }

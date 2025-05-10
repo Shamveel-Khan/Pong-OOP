@@ -717,13 +717,14 @@ class ThemeFireIce : public Button {
     
 
 
-int main()
+void mainMenu()
 {
-    const int baseWidth = 1920;
-    const int baseHeight = 1080;
+    const int baseWidth = 800;
+    const int baseHeight = 800;
 
     SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_WINDOW_HIGHDPI);
     InitWindow(baseWidth,baseHeight, "PONG BALL GAME MENU");
+    SetWindowState(FLAG_WINDOW_RESIZABLE);
     SetTargetFPS(60);
     ScreenBounds = Rectangle{0, 0, static_cast<float>(GetScreenWidth()), static_cast<float>(GetScreenHeight())};
 
@@ -1051,5 +1052,8 @@ ButtonClose themeBackBtn({0,0}, {300,50},
         EndDrawing();
     }
     UIComponent::UnloadFonts();
-    return 0;
+}
+int main() {
+    cout<<"\nRunning\n";
+    mainMenu();
 }
