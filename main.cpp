@@ -19,9 +19,17 @@ int screenWidth = 800;
 int screenHeight = 770;
 bool isPaused = false;
 int isServer = false;
+int runOnline = 0;
 string mode = "Assets/";
 
 Rectangle ScreenBounds;
+
+typedef struct
+{
+    int scoreL;
+    int scoreR;
+} scores;
+
 // below is for pong offline:
 float Clamp(float value, float min, float max)
 {
@@ -194,7 +202,7 @@ public:
     ~ballOffline() { UnloadTexture(skin); }
 };
 
-//the below is for client pong
+// the below is for client pong
 
 struct state
 {
@@ -289,7 +297,6 @@ class themeC
     Color border;
     Rectangle boundaries;
     int borderWidth;
-    // TODO: add scoreBoardC to client and make it consistent in themeCs
 public:
     themeC(Color b, Color ba, Color bo, Rectangle bou, int bw, string name)
     {
@@ -312,7 +319,7 @@ public:
     void drawBoard()
     {
         ClearBackground(background);
-        DrawRectangle(0, 0, screenWidth, 25, BLACK); // Top bar
+        DrawRectangle(0, 0, screenWidth, 25, BLACK); 
         DrawRectangleLinesEx(boundaries, borderWidth, YELLOW);
         DrawTexture(pi, boundaries.x, boundaries.y, WHITE);
         DrawCircleLines(boundaries.x + boundaries.width / 2, boundaries.y + boundaries.height / 2, 70, WHITE);
@@ -481,7 +488,7 @@ public:
     }
 };
 
-//below is for server pong
+// below is for server pong
 bool checkPauseS(bool isHover, Color *buttonColor, ENetHost *host)
 {
     if (isHover)
@@ -765,7 +772,6 @@ public:
         UnloadTexture(skin);
     }
 };
-
 
 const Color TextColor = {132, 132, 132, 255}; // White
 const Color HeadingColor = {26, 37, 37, 255};
@@ -1427,6 +1433,7 @@ public:
     {
         // Access input box text (you'll need to make ipInput accessible)
         cout << "Attempting to join: " << globalIPInput->getText() << endl;
+        runOnline = 1;
     }
 };
 
@@ -1439,6 +1446,7 @@ public:
     {
         cout << "Server created! IP: " << endl;
         isServer = true;
+        runOnline = 1;
     }
 };
 class ThemeFireIce : public Button
@@ -1507,8 +1515,8 @@ public:
     }
 };
 
-//below is run client to run the client
-int runClient(THEMES currTheme,string ipInput)
+// below is run client to run the client
+int runClient(THEMES currTheme, string ipInput)
 {
     string ip = ipInput;
     string themePath;
@@ -1540,9 +1548,6 @@ int runClient(THEMES currTheme,string ipInput)
     int signY = 1;
     const double DELAY = 0.1;
     double now = GetTime();
-    InitWindow(screenWidth, screenHeight + 30, "Client - Multiplayer Pong"); // Include top bar
-    SetTargetFPS(60);
-    SetWindowState(FLAG_WINDOW_RESIZABLE);
 
     Rectangle border = {0, 25, (float)screenWidth, (float)screenHeight}; // Play area starts at Y=25
     themeC classic(RED, BLACK, YELLOW, border, 5, mode + themePath + "background.png");
@@ -1557,17 +1562,19 @@ int runClient(THEMES currTheme,string ipInput)
                     (screenWidth * 0.007f), (screenHeight * 0.005f), mode + themePath + "ball.png");
 
     Color buttonColor = WHITE;
+    int frameNo = 0;
+    int scoreLeft = 0;
+    int scoreRight = 0;
 
     while (!WindowShouldClose())
     {
-        now = GetTime();
         // Handle window resize
-        if (IsWindowResized())
+        if (IsWindowResized() || !frameNo)
         {
             oldSW = screenWidth;
             oldSH = screenHeight;
             screenWidth = GetScreenWidth();
-            screenHeight = GetScreenHeight() - 30; // Adjust for top bar
+            screenHeight = GetScreenHeight() - 30;
             int signSpeedX = (gameballC.getballCSpeedX() < 0) ? -1 : 1;
             int signSpeedY = (gameballC.getballCSpeedY() < 0) ? -1 : 1;
 
@@ -1590,6 +1597,9 @@ int runClient(THEMES currTheme,string ipInput)
                                    (int)(signSpeedX * screenWidth * 0.007f), (int)(signSpeedY * screenHeight * 0.005f), mode + themePath + "ball.png");
 
             new (&classic) themeC(RED, BLACK, YELLOW, border, 5, mode + themePath + "background.png");
+            networkReceiveScores(host, &scoreLeft, &scoreRight);
+            *(score.getScore1()) = scoreLeft;
+            *(score.getScore2()) = scoreRight;
         }
 
         // Pause button interaction
@@ -1600,6 +1610,14 @@ int runClient(THEMES currTheme,string ipInput)
 
         if (!isPaused)
         {
+            if (frameNo % 2 == 0)
+            {
+                networkReceiveScores(host, &scoreLeft, &scoreRight);
+                if(scoreLeft > 0 && scoreRight >0 && scoreLeft<50 && scoreRight<50){
+                    *(score.getScore1()) = scoreLeft;
+                    *(score.getScore2()) = scoreRight;
+                }
+            }
             networkSendState(host, peer, 0, 0, 0, (float)right.getPositionY() / screenHeight);
             cout << "Sent as: " << (float)right.getPositionY() / screenHeight << endl;
             float dummy;
@@ -1630,15 +1648,11 @@ int runClient(THEMES currTheme,string ipInput)
             right.drawpaddleC();
             gameballC.drawballC();
 
-            // Draw top bar elements
-            time_t now = time(0);
-            struct tm *localTime = localtime(&now);
-            char buffer[10];
-            strftime(buffer, sizeof(buffer), "%H:%M", localTime);
-            DrawText(TextFormat("Current Time: %s", buffer), 10, 5, 20, WHITE);
+            DrawText(to_string((int)frameNo / 60).c_str(), 10, 5, 20, WHITE);
             DrawRectangleRec(button, buttonColor);
             DrawText("Pause", screenWidth - 65, 5, 15, WHITE);
             EndDrawing();
+            frameNo++;
         }
         else
         {
@@ -1657,7 +1671,7 @@ int runClient(THEMES currTheme,string ipInput)
     return 0;
 }
 
-//below is run server to run the server
+// below is run server to run the server
 int runServer(THEMES currTheme)
 {
     string themePath;
@@ -1675,8 +1689,7 @@ int runServer(THEMES currTheme)
         themePath = "spacegalaxy/";
 
     int oldSW = 800, oldSH = 770;
-    int score1 = 0;
-    int score2 = 0;
+    int frameNo = 0;
 
     Rectangle border = {0, 25, (float)screenWidth, (float)screenHeight};
     themeS classic(RED, BLACK, YELLOW, border, 5, mode + themePath + "background.png");
@@ -1701,7 +1714,7 @@ int runServer(THEMES currTheme)
 
     while (!WindowShouldClose())
     {
-        if (IsWindowResized())
+        if (IsWindowResized() || !frameNo)
         {
             int oldSW = screenWidth;
             int oldSH = screenHeight;
@@ -1725,7 +1738,6 @@ int runServer(THEMES currTheme)
             if (gameballS.getPositionY() > screenHeight - 25 - newballSRadius)
                 gameballS.setPositionY(screenHeight - 25 - newballSRadius);
 
-            // Update the border and re-create the themeS with the new board dimensions.
             border = {0, 25, (float)screenWidth, (float)screenHeight};
 
             classic.~themeS();
@@ -1733,33 +1745,33 @@ int runServer(THEMES currTheme)
             left.~paddleS();
             right.~paddleS();
             new (&left) paddleS(classic.getBorderWidth() + 5, screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE,
-                               (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode + themePath + "paddle.png");
-
-            new (&right) paddleS(screenWidth - 10 - (int)(screenWidth * 0.02f), screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE,
                                 (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode + themePath + "paddle.png");
 
+            new (&right) paddleS(screenWidth - 10 - (int)(screenWidth * 0.02f), screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE,
+                                 (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode + themePath + "paddle.png");
+
             new (&gameballS) ballS((int)newballSX, (int)newballSY, newballSRadius, classic.getballSColor(),
-                                 (int)(signSpeedX * screenWidth * 0.007f), (int)(signSpeedY * screenHeight * 0.005f), mode + themePath + "ball.png");
+                                   (int)(signSpeedX * screenWidth * 0.007f), (int)(signSpeedY * screenHeight * 0.005f), mode + themePath + "ball.png");
 
             new (&classic) themeS(RED, BLACK, YELLOW, border, 5, mode + themePath + "background.png");
+            networkSendScore(host, NULL, *(score.getScore1()), *(score.getScore2()));
         }
-        time_t now = time(0);
-        struct tm *localTime = localtime(&now);
-        char buffer[10];
-        strftime(buffer, sizeof(buffer), "%H:%M", localTime);
 
         Vector2 pos = GetMousePosition();
         bool isHover = CheckCollisionPointRec(pos, button);
         isPaused = checkPauseS(isHover, &buttonColor, host);
         if (!isPaused)
         {
-            // Update current state (used for networking position scaling).
             sts.x = gameballS.getPositionX();
             sts.y = gameballS.getPositionY();
             sts.p1 = left.getPositionY();
             sts.p2 = right.getPositionY();
 
             networkProcessEvents(host);
+            if (frameNo % 2 == 0)
+            {
+                networkSendScore(host, NULL, *(score.getScore1()), *(score.getScore2()));
+            }
             networkReceiveState(host, &dummy.x, &dummy.y, &dummy.p1, &dummy.p2);
             cout << "Reaceived p2 as" << dummy.p2 << endl;
             dummy.p2 *= screenHeight;
@@ -1774,16 +1786,17 @@ int runServer(THEMES currTheme)
                              (float)gameballS.getPositionY() / screenHeight, (float)left.getPositionY() / screenHeight, (float)right.getPositionY());
 
             BeginDrawing();
-            DrawRectangle(0, 0, screenWidth, 25, BLACK);
-            DrawText(TextFormat("Current Time: %s", buffer), 10, 5, 20, WHITE);
             classic.drawBoard(screenWidth, screenHeight);
             score.drawBoard(4);
             left.drawpaddleS();
             right.drawpaddleS();
             gameballS.drawballS();
+            DrawRectangle(0, 0, screenWidth, 25, BLACK);
             DrawRectangleRec(button, buttonColor);
+            DrawText(to_string((int)frameNo / 60).c_str(), 10, 5, 20, WHITE);
             DrawText("Pause", screenWidth - 65, 5, 15, WHITE);
             EndDrawing();
+            frameNo++;
         }
         else
         {
@@ -2210,11 +2223,11 @@ void mainMenu()
             int endVal;
             if (currentMode == OFFLINE)
             {
-                endVal = offlinePong(currentTheme,1);
+                endVal = offlinePong(currentTheme, 1);
             }
-            if (currentMode == COMPUTER) 
+            if (currentMode == COMPUTER)
             {
-                endVal = offlinePong(currentTheme,0);
+                endVal = offlinePong(currentTheme, 0);
             }
             if (!endVal)
                 return;
@@ -2236,13 +2249,16 @@ void mainMenu()
                 c->handleEvent();
                 c->draw();
             }
-            if(!isServer) {
-                endVal = runClient(currentTheme,globalIPInput->getText());
+            if (!isServer && runOnline)
+            {
+                endVal = runClient(currentTheme, globalIPInput->getText());
             }
-            else {
+            else if (runOnline)
+            {
                 endVal = runServer(currentTheme);
             }
-            if(!endVal) return;
+            if (!endVal)
+                return;
             break;
         case THEME:
             bg.handleEvent();
@@ -2257,7 +2273,6 @@ void mainMenu()
             CloseWindow();
             break;
         }
-
         DrawFPS(20, 20);
         EndDrawing();
     }

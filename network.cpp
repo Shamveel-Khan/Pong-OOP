@@ -24,9 +24,9 @@ typedef struct
 
 typedef struct
 {
-    int height;
-    int width;
-} size;
+    int scoreL;
+    int scoreR;
+} scores;
 
 int networkInitialize(NetworkMode mode, const char *address, ENetHost **host, ENetPeer **peer)
 {
@@ -101,7 +101,7 @@ int networkSendState(ENetHost *host, ENetPeer *peer, float x, float y, float ser
     sts.y = y;
     sts.serverPaddle = serverPaddle;
     sts.clientPaddle = clientPaddle;
-    ENetPacket *gts = enet_packet_create(&sts, sizeof(state),0);
+    ENetPacket *gts = enet_packet_create(&sts, sizeof(state), 0);
     if (peer)
     {
         enet_peer_send(peer, 0, gts);
@@ -111,6 +111,25 @@ int networkSendState(ENetHost *host, ENetPeer *peer, float x, float y, float ser
         enet_host_broadcast(host, 0, gts);
     }
     enet_host_flush(host);
+    return 0;
+}
+
+int networkSendScore(ENetHost *host, ENetPeer *peer, int sl, int sr)
+{
+    scores currentScores;
+    currentScores.scoreL = sl;
+    currentScores.scoreR = sr;
+    ENetPacket *gts = enet_packet_create(&currentScores, sizeof(scores), ENET_PACKET_FLAG_RELIABLE);
+    if (peer)
+    {
+        enet_peer_send(peer, 0, gts);
+    }
+    else
+    {
+        enet_host_broadcast(host, 0, gts);
+    }
+    enet_host_flush(host);
+    cout << "\nSentScore as: "<<sl<<" "<<sr<<endl<<endl;
     return 0;
 }
 
@@ -132,6 +151,26 @@ int networkReceiveState(ENetHost *host, float *x, float *y, float *serverPaddle,
             enet_packet_destroy(event.packet);
         }
     }
+    return 0;
+}
+
+int networkReceiveScores(ENetHost *host, int *sl, int *sr)
+{
+    ENetEvent event;
+    while (enet_host_service(host, &event, 5) > 0)
+    {
+        if (event.type == ENET_EVENT_TYPE_RECEIVE)
+        {
+            if (event.packet->dataLength == sizeof(scores))
+            {
+                scores *Sdata = (scores *)event.packet->data;
+                *sl = Sdata->scoreL;
+                *sr = Sdata->scoreR;
+            }
+            enet_packet_destroy(event.packet);
+        }
+    }
+    cout<<"\nReceived Scores as : "<<*sl<<" "<<*sr<<endl<<endl;
     return 0;
 }
 
