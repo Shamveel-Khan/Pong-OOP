@@ -5,8 +5,767 @@
 #include <iostream>
 #include <cmath>
 #include <algorithm>
+#include <stdio.h>
+#include <math.h>
+#include <ctime>
+#include "network.h"
 using namespace std;
+
+#define DrawText DrawText
+#define CloseWindow CloseWindow
+#define ShowCursor ShowCursor
+
+int screenWidth = 800;
+int screenHeight = 770;
+bool isPaused = false;
+int isServer = false;
+string mode = "Assets/";
+
 Rectangle ScreenBounds;
+// below is for pong offline:
+float Clamp(float value, float min, float max)
+{
+    if (value < min)
+        return min;
+    if (value > max)
+        return max;
+    return value;
+}
+
+bool checkPauseOffline(bool isHover, Color *buttonColor)
+{
+    if (isHover)
+        *buttonColor = DARKGRAY;
+    else
+        *buttonColor = WHITE;
+    if (isHover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+        isPaused = !isPaused;
+    return isPaused;
+}
+
+class scoreBoardOffline
+{
+    int scoreLeft = 0;
+    int scoreRight = 0;
+
+public:
+    void drawBoard(int choice)
+    {
+        float posX, posX2, posY, fontSize;
+        Color scoreColor;
+        switch (choice)
+        {
+        case 1:
+            posX = 0.175 * screenWidth;
+            posX2 = 0.6875 * screenWidth;
+            posY = 0.375 * screenHeight;
+            scoreColor = (Color){120, 252, 255, 90};
+            fontSize = 0.1625 * (screenWidth + screenHeight);
+            break;
+        case 2:
+            posX = 0.1125 * screenWidth;
+            posX2 = 0.82125 * screenWidth;
+            posY = 0.4575 * screenHeight;
+            scoreColor = (Color){150, 255, 255, 255};
+            fontSize = 0.075 * (screenWidth + screenHeight);
+            break;
+        case 3:
+            posX = 0.1125 * screenWidth;
+            posX2 = 0.82125 * screenWidth;
+            posY = 0.4575 * screenHeight;
+            scoreColor = (Color){124, 252, 0, 255};
+            fontSize = 0.075 * (screenWidth + screenHeight);
+            break;
+        default:
+            posX = 0.175 * screenWidth;
+            posX2 = 0.6875 * screenWidth;
+            posY = 0.375 * screenHeight;
+            scoreColor = (Color){120, 252, 255, 90};
+            fontSize = 0.1625 * (screenWidth + screenHeight);
+            break;
+        }
+        DrawText(TextFormat("%d", scoreRight), posX2, posY, fontSize, scoreColor);
+        DrawText(TextFormat("%d", scoreLeft), posX, posY, fontSize, scoreColor);
+    }
+    int *getScore1() { return &scoreLeft; }
+    int *getScore2() { return &scoreRight; }
+};
+
+class themeOffline
+{
+    Color ballSColor;
+    Texture2D pic;
+    Color background;
+    Rectangle boundaries;
+    int borderWidth;
+
+public:
+    themeOffline(Color b, Color ba, Rectangle bou, int bw, string name) : ballSColor(b), background(ba), boundaries(bou), borderWidth(bw)
+    {
+        Image bck = LoadImage(name.c_str());
+        ImageResize(&bck, bou.width, bou.height);
+        pic = LoadTextureFromImage(bck);
+        UnloadImage(bck);
+    }
+    void drawBoard(int, int)
+    {
+        ClearBackground(background);
+        DrawRectangle(0, 0, screenWidth, 25, BLACK);
+        DrawRectangleLinesEx(boundaries, borderWidth, YELLOW);
+        DrawTexture(pic, boundaries.x, boundaries.y, WHITE);
+        DrawCircleLines(boundaries.x + boundaries.width / 2, boundaries.y + boundaries.height / 2, 70, WHITE);
+        DrawLine(screenWidth / 2, boundaries.y, screenWidth / 2, boundaries.y + boundaries.height, WHITE);
+    }
+    Color getballSColor() { return ballSColor; }
+    ~themeOffline() { UnloadTexture(pic); }
+};
+
+class paddleOffline
+{
+    int height, width, positionX, positionY;
+    Texture2D skin;
+
+public:
+    paddleOffline(int x, int y, int h, int w, string name) : positionX(x), positionY(y), height(h), width(w)
+    {
+        Image skinImg = LoadImage(name.c_str());
+        ImageResize(&skinImg, width, height);
+        skin = LoadTextureFromImage(skinImg);
+        UnloadImage(skinImg);
+    }
+    void setPositionY(int y) { positionY = y; }
+    int getPositionY() { return positionY; }
+    void drawpaddleS() { DrawTexture(skin, positionX, positionY, WHITE); }
+    void update(bool isLeft)
+    {
+        if (isLeft)
+        {
+            if (IsKeyDown(KEY_W))
+                positionY -= screenHeight * 0.01f;
+            if (IsKeyDown(KEY_S))
+                positionY += screenHeight * 0.01f;
+        }
+        else
+        {
+            if (IsKeyDown(KEY_UP))
+                positionY -= screenHeight * 0.01f;
+            if (IsKeyDown(KEY_DOWN))
+                positionY += screenHeight * 0.01f;
+        }
+        positionY = (int)Clamp(positionY, 25.0f, (float)screenHeight - height + 25);
+    }
+    Rectangle getRec() { return {(float)positionX, (float)positionY, (float)width, (float)height}; }
+    ~paddleOffline() { UnloadTexture(skin); }
+};
+
+class ballOffline
+{
+    int positionX, positionY, radius, ballSSpeedX, ballSSpeedY;
+    Texture2D skin;
+
+public:
+    ballOffline(int x, int y, int r, int speedX, int speedY, string name) : positionX(x), positionY(y), radius(r), ballSSpeedX(speedX), ballSSpeedY(speedY)
+    {
+        Image skinImg = LoadImage(name.c_str());
+        ImageResize(&skinImg, radius * 2, radius * 2);
+        skin = LoadTextureFromImage(skinImg);
+        UnloadImage(skinImg);
+    }
+    int getBallSSpeedX() { return ballSSpeedX; }
+    int getBallSSpeedY() { return ballSSpeedY; }
+    void drawballS() { DrawTexture(skin, positionX - radius, positionY - radius, WHITE); }
+    void update(Rectangle leftRec, Rectangle rightRec, int *score1, int *score2)
+    {
+        if (positionX + radius >= screenWidth || positionX - radius <= 0)
+        {
+            ballSSpeedX *= -1;
+            (positionX + radius >= screenWidth) ? (*score2)++ : (*score1)++;
+        }
+        if (positionY + radius >= screenHeight + 25 || positionY - radius <= 25)
+            ballSSpeedY *= -1;
+        if (CheckCollisionCircleRec({(float)positionX, (float)positionY}, radius, leftRec) ||
+            CheckCollisionCircleRec({(float)positionX, (float)positionY}, radius, rightRec))
+            ballSSpeedX *= -1;
+        positionX += ballSSpeedX;
+        positionY += ballSSpeedY;
+    }
+    int getPositionX() { return positionX; }
+    int getPositionY() { return positionY; }
+    ~ballOffline() { UnloadTexture(skin); }
+};
+
+//the below is for client pong
+
+struct state
+{
+    float x;
+    float y;
+    float p2;
+    float p1;
+};
+
+bool checkPauseC(bool isHover, Color *buttonColor, ENetPeer *peer, ENetHost *host)
+{
+    if (isHover)
+    {
+        *buttonColor = DARKGRAY;
+    }
+    else
+    {
+        *buttonColor = WHITE;
+    }
+    if (isHover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+    {
+        isPaused = !isPaused;
+        sendPause(host, peer, isPaused);
+    }
+    return isPaused;
+}
+
+class scoreBoardC
+{
+    int scoreLeft;
+    int scoreRight;
+
+public:
+    scoreBoardC()
+    {
+        scoreLeft = 0;
+        scoreRight = 0;
+    }
+    void drawBoard(int choice)
+    {
+        float posX, posX2, posY, fontSize;
+        Color scoreColor;
+        switch (choice)
+        {
+        case 1:
+            posX = 0.175 * screenWidth;
+            posX2 = 0.6875 * screenWidth;
+            posY = 0.375 * screenHeight;
+            scoreColor = (Color){120, 252, 255, 90};
+            fontSize = 0.1625 * (screenWidth + screenHeight);
+            break;
+        case 2:
+            posX = 0.1125 * screenWidth;
+            posX2 = 0.82125 * screenWidth;
+            posY = 0.4575 * screenHeight;
+            scoreColor = (Color){150, 255, 255, 255};
+            fontSize = 0.075 * (screenWidth + screenHeight);
+            break;
+        case 3:
+            posX = 0.1125 * screenWidth;
+            posX2 = 0.82125 * screenWidth;
+            posY = 0.4575 * screenHeight;
+            scoreColor = (Color){124, 252, 0, 255};
+            fontSize = 0.075 * (screenWidth + screenHeight);
+            break;
+        default:
+            posX = 0.175 * screenWidth;
+            posX2 = 0.6875 * screenWidth;
+            posY = 0.375 * screenHeight;
+            scoreColor = (Color){120, 252, 255, 90};
+            fontSize = 0.1625 * (screenWidth + screenHeight);
+            break;
+        }
+        DrawText(TextFormat("%d", scoreRight), posX2, posY, fontSize, scoreColor);
+        DrawText(TextFormat("%d", scoreLeft), posX, posY, fontSize, scoreColor);
+    }
+    int *getScore1()
+    {
+        return &scoreLeft;
+    }
+    int *getScore2()
+    {
+        return &scoreRight;
+    }
+};
+
+class themeC
+{
+    Color ballCColor;
+    Texture2D pi;
+    Color background;
+    Color border;
+    Rectangle boundaries;
+    int borderWidth;
+    // TODO: add scoreBoardC to client and make it consistent in themeCs
+public:
+    themeC(Color b, Color ba, Color bo, Rectangle bou, int bw, string name)
+    {
+        ballCColor = b;
+        background = ba;
+        border = bo;
+        boundaries = bou;
+        borderWidth = bw;
+
+        Image bck = LoadImage(name.c_str());
+        if (bck.data == NULL)
+        {
+            cout << "Failed to load background image!" << endl;
+            exit(1);
+        }
+        ImageResize(&bck, bou.width, bou.height);
+        pi = LoadTextureFromImage(bck);
+        UnloadImage(bck);
+    }
+    void drawBoard()
+    {
+        ClearBackground(background);
+        DrawRectangle(0, 0, screenWidth, 25, BLACK); // Top bar
+        DrawRectangleLinesEx(boundaries, borderWidth, YELLOW);
+        DrawTexture(pi, boundaries.x, boundaries.y, WHITE);
+        DrawCircleLines(boundaries.x + boundaries.width / 2, boundaries.y + boundaries.height / 2, 70, WHITE);
+        DrawLine(screenWidth / 2, boundaries.y, screenWidth / 2, boundaries.y + boundaries.height, WHITE);
+    }
+    int getBorderWidth()
+    {
+        return borderWidth;
+    }
+    Color getballCColor()
+    {
+        return ballCColor;
+    }
+    ~themeC()
+    {
+        UnloadTexture(pi);
+    }
+};
+
+class paddleC
+{
+    int height;
+    int width;
+    int positionX;
+    int positionY;
+    Texture2D skin;
+    Color color;
+
+public:
+    paddleC(int x, int y, Color c, int h, int w, string name)
+    {
+        positionX = x;
+        positionY = y;
+        color = c;
+        height = h;
+        width = w;
+
+        Image skinImg = LoadImage(name.c_str());
+        if (skinImg.data == NULL)
+        {
+            cout << "Image was NULL" << endl;
+            exit(1);
+        }
+        ImageResize(&skinImg, width, height);
+        skin = LoadTextureFromImage(skinImg);
+        UnloadImage(skinImg);
+    }
+    void setPositionY(int y)
+    {
+        positionY = y;
+    }
+    int getPositionY()
+    {
+        return positionY;
+    }
+    void drawpaddleC()
+    {
+        DrawTexture(skin, positionX, positionY, WHITE);
+    }
+    void update()
+    {
+        if (IsKeyDown(KEY_W))
+            positionY -= 5;
+        if (IsKeyDown(KEY_S))
+            positionY += 5;
+        positionY = Clamp(positionY, 25.0f, 25.0f + screenHeight - height); // Adjusted clamping
+    }
+    Rectangle getRec()
+    {
+        Rectangle r = {(float)positionX, (float)positionY, (float)width, (float)height};
+        return r;
+    }
+    ~paddleC()
+    {
+        UnloadTexture(skin);
+    }
+};
+
+class ballC
+{
+    int positionX;
+    int positionY;
+    int radius;
+    int ballCSpeedX;
+    int ballCSpeedY;
+    Color color;
+    Texture2D skin;
+
+public:
+    ballC(int x, int y, int r, Color c, int speedX, int speedY, string name)
+    {
+        positionX = x;
+        positionY = y;
+        radius = r;
+        color = c;
+        ballCSpeedX = speedX;
+        ballCSpeedY = speedY;
+
+        Image skinImg = LoadImage(name.c_str());
+        if (skinImg.data == NULL)
+        {
+            cout << "Failed to load background image!" << endl;
+            exit(1);
+        }
+        ImageResize(&skinImg, radius * 2, radius * 2);
+        skin = LoadTextureFromImage(skinImg);
+        UnloadImage(skinImg);
+    }
+    void drawballC()
+    {
+        DrawTexture(skin, positionX - radius, positionY - radius, WHITE);
+    }
+    void setPositionX(int x)
+    {
+        positionX = x;
+    }
+    void setPositionY(int y)
+    {
+        positionY = y;
+    }
+    int getballCSpeedX()
+    {
+        return ballCSpeedX;
+    }
+    int getballCSpeedY()
+    {
+        return ballCSpeedY;
+    }
+    int getPositionX()
+    {
+        return positionX;
+    }
+    int getPositionY()
+    {
+        return positionY;
+    }
+    void update(Rectangle leftRec, Rectangle rightRec, int *score1, int *score2)
+    {
+        if (positionX + radius >= screenWidth || positionX - radius <= 0)
+        {
+            ballCSpeedX *= -1;
+            if (positionX + radius >= screenWidth)
+            {
+                (*score2)++;
+            }
+            else
+            {
+                (*score1)++;
+            }
+        }
+        if (positionY + radius >= screenHeight + 25 || positionY - radius <= 25)
+        {
+            ballCSpeedY *= -1;
+        }
+        if (CheckCollisionCircleRec((Vector2){(float)positionX, (float)positionY}, radius, leftRec) ||
+            CheckCollisionCircleRec((Vector2){(float)positionX, (float)positionY}, radius, rightRec))
+        {
+            ballCSpeedX *= -1;
+        }
+        positionX += ballCSpeedX;
+        positionY += ballCSpeedY;
+    }
+    ~ballC()
+    {
+        UnloadTexture(skin);
+    }
+};
+
+//below is for server pong
+bool checkPauseS(bool isHover, Color *buttonColor, ENetHost *host)
+{
+    if (isHover)
+    {
+        *buttonColor = DARKGRAY;
+    }
+    else
+    {
+        *buttonColor = WHITE;
+    }
+    if (isHover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+    {
+        isPaused = !isPaused;
+        sendPause(host, NULL, isPaused);
+    }
+    return isPaused;
+}
+
+class scoreBoardS
+{
+    int scoreLeft;
+    int scoreRight;
+
+public:
+    scoreBoardS()
+    {
+        scoreLeft = 0;
+        scoreRight = 0;
+    }
+    void drawBoard(int choice)
+    {
+        float posX, posX2, posY, fontSize;
+        Color scoreColor;
+        switch (choice)
+        {
+        case 1:
+            posX = 0.175 * screenWidth;
+            posX2 = 0.6875 * screenWidth;
+            posY = 0.375 * screenHeight;
+            scoreColor = (Color){120, 252, 255, 90};
+            fontSize = 0.1625 * (screenWidth + screenHeight);
+            break;
+        case 2:
+            posX = 0.1125 * screenWidth;
+            posX2 = 0.82125 * screenWidth;
+            posY = 0.4575 * screenHeight;
+            scoreColor = (Color){150, 255, 255, 255};
+            fontSize = 0.075 * (screenWidth + screenHeight);
+            break;
+        case 3:
+            posX = 0.1125 * screenWidth;
+            posX2 = 0.82125 * screenWidth;
+            posY = 0.4575 * screenHeight;
+            scoreColor = (Color){124, 252, 0, 255};
+            fontSize = 0.075 * (screenWidth + screenHeight);
+            break;
+        default:
+            posX = 0.175 * screenWidth;
+            posX2 = 0.6875 * screenWidth;
+            posY = 0.375 * screenHeight;
+            scoreColor = (Color){120, 252, 255, 90};
+            fontSize = 0.1625 * (screenWidth + screenHeight);
+            break;
+        }
+        DrawText(TextFormat("%d", scoreRight), posX2, posY, fontSize, scoreColor);
+        DrawText(TextFormat("%d", scoreLeft), posX, posY, fontSize, scoreColor);
+    }
+    int *getScore1()
+    {
+        return &scoreLeft;
+    }
+    int *getScore2()
+    {
+        return &scoreRight;
+    }
+};
+
+class themeS
+{
+    Color ballSColor;
+    Texture2D pic;
+    Color background;
+    Color border;
+    Rectangle boundaries;
+    int borderWidth;
+
+public:
+    themeS(Color b, Color ba, Color bo, Rectangle bou, int bw, string name)
+    {
+        ballSColor = b;
+        border = bo;
+        background = ba;
+        boundaries = bou;
+        borderWidth = bw;
+
+        Image bck = LoadImage(name.c_str());
+        if (bck.data == NULL)
+        {
+            cout << "Failed to load background image!" << endl;
+            exit(1);
+        }
+        ImageResize(&bck, bou.width, bou.height);
+        pic = LoadTextureFromImage(bck);
+        UnloadImage(bck);
+    }
+    void drawBoard(int sw, int sh)
+    {
+        ClearBackground(background);
+        DrawRectangle(0, 0, screenWidth, 25, BLACK); // Top bar
+        DrawRectangleLinesEx(boundaries, borderWidth, YELLOW);
+        DrawTexture(pic, boundaries.x, boundaries.y, WHITE);
+        DrawCircleLines(boundaries.x + boundaries.width / 2, boundaries.y + boundaries.height / 2, 70, WHITE);
+        DrawLine(screenWidth / 2, boundaries.y, screenWidth / 2, boundaries.y + boundaries.height, WHITE);
+    }
+    int getBorderWidth()
+    {
+        return borderWidth;
+    }
+    Color getballSColor()
+    {
+        return ballSColor;
+    }
+    ~themeS()
+    {
+        UnloadTexture(pic);
+    }
+};
+
+class paddleS
+{
+    int height;
+    int width;
+    int positionX;
+    int positionY;
+    Texture2D skin;
+    Color color;
+
+public:
+    paddleS(int x, int y, Color c, int h, int w, string name)
+    {
+        positionX = x;
+        positionY = y;
+        color = c;
+        height = h;
+        width = w;
+
+        Image skinImg = LoadImage(name.c_str());
+        if (skinImg.data == NULL)
+        {
+            cout << "Image was NULL" << endl;
+            exit(1);
+        }
+        ImageResize(&skinImg, width, height);
+        skin = LoadTextureFromImage(skinImg);
+        UnloadImage(skinImg);
+    }
+    void setPositionY(int y)
+    {
+        positionY = y;
+    }
+    int getPositionY()
+    {
+        return positionY;
+    }
+    void drawpaddleS()
+    {
+        DrawTexture(skin, positionX, positionY, WHITE);
+    }
+    void update()
+    {
+        if (positionX == 10)
+        {
+            if (IsKeyDown(KEY_W))
+                positionY -= screenHeight * 0.01f;
+            if (IsKeyDown(KEY_S))
+                positionY += screenHeight * 0.01f;
+            positionY = (int)Clamp(positionY, 25.0f, (float)screenHeight - height + 25);
+        }
+    }
+    Rectangle getRec()
+    {
+        Rectangle r = {(float)positionX, (float)positionY, (float)width, (float)height};
+        return r;
+    }
+    ~paddleS()
+    {
+        UnloadTexture(skin);
+    }
+};
+
+class ballS
+{
+    int positionX;
+    int positionY;
+    int radius;
+    int ballSSpeedX;
+    int ballSSpeedY;
+    Color color;
+    Texture2D skin;
+
+public:
+    ballS(int x, int y, int r, Color c, int speedX, int speedY, string name)
+    {
+        positionX = x;
+        positionY = y;
+        radius = r;
+        color = c;
+        ballSSpeedX = speedX;
+        ballSSpeedY = speedY;
+
+        Image skinImg = LoadImage(name.c_str());
+        if (skinImg.data == NULL)
+        {
+            cout << "Failed to load background image!" << endl;
+            exit(1);
+        }
+        ImageResize(&skinImg, radius * 2, radius * 2);
+        skin = LoadTextureFromImage(skinImg);
+        UnloadImage(skinImg);
+    }
+    void drawballS()
+    {
+        DrawTexture(skin, positionX - radius, positionY - radius, WHITE);
+    }
+    void setPositionX(int x)
+    {
+        positionX = x;
+    }
+    void setPositionY(int y)
+    {
+        positionY = y;
+    }
+    int getPositionX()
+    {
+        return positionX;
+    }
+    int getPositionY()
+    {
+        return positionY;
+    }
+    int getballSSpeedX()
+    {
+        return ballSSpeedX;
+    }
+    int getballSSpeedY()
+    {
+        return ballSSpeedY;
+    }
+    int getRadius()
+    {
+        return radius;
+    }
+    void update(Rectangle leftRec, Rectangle rightRec, int *score1, int *score2)
+    {
+        if (positionX + radius >= screenWidth || positionX - radius <= 0)
+        {
+            ballSSpeedX *= -1;
+            if (positionX + radius >= screenWidth)
+            {
+                (*score2)++;
+            }
+            else
+            {
+                (*score1)++;
+            }
+        }
+        if (positionY + radius >= screenHeight + 25 || positionY - radius <= 25)
+        {
+            ballSSpeedY *= -1;
+        }
+        if (CheckCollisionCircleRec((Vector2){(float)positionX, (float)positionY}, radius, leftRec) ||
+            CheckCollisionCircleRec((Vector2){(float)positionX, (float)positionY}, radius, rightRec))
+        {
+            ballSSpeedX *= -1;
+        }
+        positionX += ballSSpeedX;
+        positionY += ballSSpeedY;
+    }
+    ~ballS()
+    {
+        UnloadTexture(skin);
+    }
+};
+
 
 const Color TextColor = {132, 132, 132, 255}; // White
 const Color HeadingColor = {26, 37, 37, 255};
@@ -31,11 +790,11 @@ enum GAMESTATES
 {
     LOBBY,
     MODE,
-    GAMEPLAY,
+    GAMEPLAY, // kala kala
     EXIT,
     THEME,
     ABOUT,
-    ONLINEGAME
+    ONLINEGAME // kala kala2
 };
 enum THEMES
 {
@@ -59,7 +818,7 @@ enum MODES
     COMPUTER
 };
 
-THEMES currentTheme = THEME1;
+THEMES currentTheme = THEME4;
 GAMESTATES currentState = LOBBY;
 MODES currentMode = OFFLINE;
 // helper function to redirect to links
@@ -67,11 +826,11 @@ void openLink(const string link)
 {
     system(("start " + link).c_str());
 }
-string GetIPAddress(){}
+
 class InputBox;
 class Container;
 class Background;
-InputBox* globalIPInput = nullptr;
+InputBox *globalIPInput = nullptr;
 
 // UI Base Class with built-in font handling
 class UIComponent
@@ -510,14 +1269,16 @@ public:
     string getText() { return text; }
 };
 // image component class
-class ImageComponent : public UIComponent {
-    friend class Container; 
+class ImageComponent : public UIComponent
+{
+    friend class Container;
     Texture2D texture;
     string path;
 
 public:
-    ImageComponent(Vector2 pos, Vector2 sz, const string& imgPath) 
-        : UIComponent(pos, sz, BLANK), path(imgPath) {
+    ImageComponent(Vector2 pos, Vector2 sz, const string &imgPath)
+        : UIComponent(pos, sz, BLANK), path(imgPath)
+    {
         Image img = LoadImage(path.c_str());
         texture = LoadTextureFromImage(img);
         UnloadImage(img);
@@ -525,28 +1286,29 @@ public:
         updatePosition();
     }
 
-    void updatePosition() override {
+    void updatePosition() override
+    {
         UIComponent::updatePosition();
         // Maintain aspect ratio
-        float scale = min(size.x/texture.width, size.y/texture.height);
-        size = {texture.width*scale, texture.height*scale};
+        float scale = min(size.x / texture.width, size.y / texture.height);
+        size = {texture.width * scale, texture.height * scale};
     }
 
-    void draw() override {
+    void draw() override
+    {
         DrawTexturePro(texture,
-            {0,0,(float)texture.width,(float)texture.height},
-            {position.x, position.y, size.x, size.y},
-            {0,0}, 0, WHITE);
+                       {0, 0, (float)texture.width, (float)texture.height},
+                       {position.x, position.y, size.x, size.y},
+                       {0, 0}, 0, WHITE);
         // Add border
         DrawRectangleLinesEx(
-            {position.x-2, position.y-2, size.x+4, size.y+4},
-            2, BLACK
-        );
+            {position.x - 2, position.y - 2, size.x + 4, size.y + 4},
+            2, BLACK);
     }
-    
-    ~ImageComponent() {
-        UnloadTexture(texture);
 
+    ~ImageComponent()
+    {
+        UnloadTexture(texture);
     }
     void handleEvent() override {}
 };
@@ -585,9 +1347,10 @@ public:
         lbl->updatePosition();
         comps.push_back(lbl);
     }
-    void addImage(ImageComponent* img, Vector2 relPos) {
-        img->originalPosition = {originalPosition.x + relPos.x, 
-                                originalPosition.y + relPos.y};
+    void addImage(ImageComponent *img, Vector2 relPos)
+    {
+        img->originalPosition = {originalPosition.x + relPos.x,
+                                 originalPosition.y + relPos.y};
         img->updatePosition();
         comps.push_back(img);
     }
@@ -674,48 +1437,483 @@ class ButtonCreate : public Button
 public:
     void click() override
     {
-        cout << "Server created! IP: " << GetIPAddress() << endl; // Raylib function
+        cout << "Server created! IP: " << endl;
+        isServer = true;
     }
 };
-class ThemeFireIce : public Button {
-    public:
-        using Button::Button;
-        void click() override { currentTheme = THEME1;currentState = LOBBY; }
-    };
-    
-    class ThemeForest : public Button {
-    public:
-        using Button::Button;
-        void click() override { currentTheme = THEME2;currentState = LOBBY; }
-    };
-    
-    class ThemeNeon : public Button {
-    public:
-        using Button::Button;
-        void click() override { currentTheme = THEME3;currentState = LOBBY; }
-    };
-    
-    class ThemeFuturistic : public Button {
-    public:
-        using Button::Button;
-        void click() override { currentTheme = THEME4;currentState = LOBBY; }
-    };
-    
-    class ThemeUnderwater : public Button {
-    public:
-        using Button::Button;
-        void click() override { currentTheme = THEME5;currentState = LOBBY; }
-    };
-    
-    class ThemeSpace : public Button {
-    public:
-        using Button::Button;
-        void click() override { currentTheme = THEME6;currentState = LOBBY; }
-    };
+class ThemeFireIce : public Button
+{
+public:
+    using Button::Button;
+    void click() override
+    {
+        currentTheme = THEME1;
+        currentState = LOBBY;
+    }
+};
 
+class ThemeForest : public Button
+{
+public:
+    using Button::Button;
+    void click() override
+    {
+        currentTheme = THEME2;
+        currentState = LOBBY;
+    }
+};
 
-    
+class ThemeNeon : public Button
+{
+public:
+    using Button::Button;
+    void click() override
+    {
+        currentTheme = THEME3;
+        currentState = LOBBY;
+    }
+};
 
+class ThemeFuturistic : public Button
+{
+public:
+    using Button::Button;
+    void click() override
+    {
+        currentTheme = THEME4;
+        currentState = LOBBY;
+    }
+};
+
+class ThemeUnderwater : public Button
+{
+public:
+    using Button::Button;
+    void click() override
+    {
+        currentTheme = THEME5;
+        currentState = LOBBY;
+    }
+};
+
+class ThemeSpace : public Button
+{
+public:
+    using Button::Button;
+    void click() override
+    {
+        currentTheme = THEME6;
+        currentState = LOBBY;
+    }
+};
+
+//below is run client to run the client
+int runClient(THEMES currTheme,string ipInput)
+{
+    string ip = ipInput;
+    string themePath;
+
+    if (currTheme == THEME1)
+        themePath = "fireAndIce/";
+    if (currTheme == THEME2)
+        themePath = "underWater/";
+    if (currTheme == THEME3)
+        themePath = "futuristic/";
+    if (currTheme == THEME4)
+        themePath = "neon/";
+    if (currTheme == THEME5)
+        themePath = "forestAndWood/";
+    if (currTheme == THEME6)
+        themePath = "spacegalaxy/";
+
+    ENetHost *host = NULL;
+    ENetPeer *peer = NULL;
+    if (networkInitialize(MODE_CLIENT, ip.c_str(), &host, &peer) != 0)
+    {
+        printf("Failed to initialize network\n");
+        return 1;
+    }
+    scoreBoardC score;
+    int oldSW = screenWidth, oldSH = screenHeight;
+    state ballCState = {(float)screenWidth / 2, (float)screenHeight / 2, (float)screenHeight / 2, (float)screenHeight / 2};
+    int signX = 1;
+    int signY = 1;
+    const double DELAY = 0.1;
+    double now = GetTime();
+    InitWindow(screenWidth, screenHeight + 30, "Client - Multiplayer Pong"); // Include top bar
+    SetTargetFPS(60);
+    SetWindowState(FLAG_WINDOW_RESIZABLE);
+
+    Rectangle border = {0, 25, (float)screenWidth, (float)screenHeight}; // Play area starts at Y=25
+    themeC classic(RED, BLACK, YELLOW, border, 5, mode + themePath + "background.png");
+
+    paddleC left(classic.getBorderWidth() + 5, screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE,
+                 (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode + themePath + "paddle.png");
+    paddleC right(screenWidth - 10 - (int)(screenWidth * 0.02f), screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE,
+                  (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode + themePath + "paddle.png");
+
+    ballC gameballC((ballCState.x * ((float)screenWidth / oldSW)), (ballCState.y * ((float)screenHeight / oldSH)),
+                    (screenWidth * 0.02f), classic.getballCColor(),
+                    (screenWidth * 0.007f), (screenHeight * 0.005f), mode + themePath + "ball.png");
+
+    Color buttonColor = WHITE;
+
+    while (!WindowShouldClose())
+    {
+        now = GetTime();
+        // Handle window resize
+        if (IsWindowResized())
+        {
+            oldSW = screenWidth;
+            oldSH = screenHeight;
+            screenWidth = GetScreenWidth();
+            screenHeight = GetScreenHeight() - 30; // Adjust for top bar
+            int signSpeedX = (gameballC.getballCSpeedX() < 0) ? -1 : 1;
+            int signSpeedY = (gameballC.getballCSpeedY() < 0) ? -1 : 1;
+
+            float newballCX = ballCState.x * ((float)screenWidth / oldSW);
+            float newballCY = ballCState.y * ((float)screenHeight / oldSH);
+            int newballCRadius = (int)(screenWidth * 0.02f);
+
+            border = {0, 25, (float)screenWidth, (float)screenHeight};
+            classic.~themeC();
+            gameballC.~ballC();
+            left.~paddleC();
+            right.~paddleC();
+            new (&left) paddleC(classic.getBorderWidth() + 5, screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE,
+                                (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode + themePath + "paddle.png");
+
+            new (&right) paddleC(screenWidth - 10 - (int)(screenWidth * 0.02f), screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE,
+                                 (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode + themePath + "paddle.png");
+
+            new (&gameballC) ballC((int)newballCX, (int)newballCY, newballCRadius, classic.getballCColor(),
+                                   (int)(signSpeedX * screenWidth * 0.007f), (int)(signSpeedY * screenHeight * 0.005f), mode + themePath + "ball.png");
+
+            new (&classic) themeC(RED, BLACK, YELLOW, border, 5, mode + themePath + "background.png");
+        }
+
+        // Pause button interaction
+        Vector2 mousePos = GetMousePosition();
+        Rectangle button = {(float)screenWidth - 70, 5, 60, 15};
+        bool isHover = CheckCollisionPointRec(mousePos, button);
+        isPaused = checkPauseC(isHover, &buttonColor, peer, host);
+
+        if (!isPaused)
+        {
+            networkSendState(host, peer, 0, 0, 0, (float)right.getPositionY() / screenHeight);
+            cout << "Sent as: " << (float)right.getPositionY() / screenHeight << endl;
+            float dummy;
+            networkReceiveState(host, &ballCState.x, &ballCState.y, &ballCState.p1, &dummy);
+            cout << "Received: " << ballCState.x << " " << ballCState.y << " " << ballCState.p1 << "\n";
+
+            ballCState.x *= screenWidth;
+            ballCState.y *= screenHeight;
+            ballCState.p1 *= screenHeight;
+
+            if (!(std::isinf(ballCState.p1) || std::isnan(ballCState.p1)) &&
+                !(std::isinf(ballCState.x) || std::isnan(ballCState.x)) &&
+                !(std::isinf(ballCState.y) || std::isnan(ballCState.y)) &&
+                ballCState.x > 0 && ballCState.x < screenWidth &&
+                ballCState.y > 0 && ballCState.y < screenHeight &&
+                ballCState.p1 >= 0 && ballCState.p1 < screenHeight)
+            {
+                left.setPositionY(ballCState.p1);
+                gameballC.setPositionX(ballCState.x);
+                gameballC.setPositionY(ballCState.y);
+            }
+
+            right.update();
+            BeginDrawing();
+            classic.drawBoard();
+            score.drawBoard(4);
+            left.drawpaddleC();
+            right.drawpaddleC();
+            gameballC.drawballC();
+
+            // Draw top bar elements
+            time_t now = time(0);
+            struct tm *localTime = localtime(&now);
+            char buffer[10];
+            strftime(buffer, sizeof(buffer), "%H:%M", localTime);
+            DrawText(TextFormat("Current Time: %s", buffer), 10, 5, 20, WHITE);
+            DrawRectangleRec(button, buttonColor);
+            DrawText("Pause", screenWidth - 65, 5, 15, WHITE);
+            EndDrawing();
+        }
+        else
+        {
+            BeginDrawing();
+            ClearBackground(BLACK);
+            DrawRectangleRec(button, buttonColor);
+            DrawText("PAUSED!!", screenWidth / 2, (screenHeight + 30) / 2, 20, WHITE); // Center in window
+            DrawText("Resume", screenWidth - 65, 5, 13, WHITE);
+            EndDrawing();
+        }
+        isPaused = receivePause(host, isPaused);
+    }
+
+    networkShutdown(host);
+    CloseWindow();
+    return 0;
+}
+
+//below is run server to run the server
+int runServer(THEMES currTheme)
+{
+    string themePath;
+    if (currTheme == THEME1)
+        themePath = "fireAndIce/";
+    if (currTheme == THEME2)
+        themePath = "underWater/";
+    if (currTheme == THEME3)
+        themePath = "futuristic/";
+    if (currTheme == THEME4)
+        themePath = "neon/";
+    if (currTheme == THEME5)
+        themePath = "forestAndWood/";
+    if (currTheme == THEME6)
+        themePath = "spacegalaxy/";
+
+    int oldSW = 800, oldSH = 770;
+    int score1 = 0;
+    int score2 = 0;
+
+    Rectangle border = {0, 25, (float)screenWidth, (float)screenHeight};
+    themeS classic(RED, BLACK, YELLOW, border, 5, mode + themePath + "background.png");
+    paddleS left(10, screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE, (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode + themePath + "paddle.png");
+    paddleS right(screenWidth - 30, screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE, (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode + themePath + "paddle.png");
+    scoreBoardS score;
+
+    ballS gameballS(oldSW / 2, oldSH / 2, (screenWidth * 0.02f), classic.getballSColor(), (screenWidth * 0.007f), (screenHeight * 0.005f), mode + themePath + "ball.png");
+    state sts;
+    state dummy = {0, 0, 0, 0};
+
+    ENetHost *host = NULL;
+    ENetPeer *peer = NULL;
+    networkInitialize(MODE_SERVER, NULL, &host, &peer);
+    sts.x = gameballS.getPositionX();
+    sts.y = gameballS.getPositionY();
+    sts.p1 = left.getPositionY();
+    sts.p2 = right.getPositionY();
+
+    Rectangle button = {(float)screenWidth - 70, 5, 60, 15};
+    Color buttonColor = WHITE;
+
+    while (!WindowShouldClose())
+    {
+        if (IsWindowResized())
+        {
+            int oldSW = screenWidth;
+            int oldSH = screenHeight;
+            screenWidth = GetScreenWidth();
+            screenHeight = GetScreenHeight() - 30;
+            button = {(float)screenWidth - 70, 5, 60, 15};
+            int signSpeedX = (gameballS.getballSSpeedX() < 0) ? -1 : 1;
+            int signSpeedY = (gameballS.getballSSpeedY() < 0) ? -1 : 1;
+
+            float newballSX = sts.x * ((float)screenWidth / oldSW);
+            float newballSY = sts.y * ((float)screenHeight / oldSH);
+            int newballSRadius = (int)(screenWidth * 0.02f);
+
+            // Clamp ballS position within the new screen bounds.
+            if (gameballS.getPositionX() < newballSRadius)
+                gameballS.setPositionX(newballSRadius);
+            if (gameballS.getPositionX() > screenWidth - newballSRadius)
+                gameballS.setPositionX(screenWidth - newballSRadius);
+            if (gameballS.getPositionY() < newballSRadius)
+                gameballS.setPositionY(newballSRadius);
+            if (gameballS.getPositionY() > screenHeight - 25 - newballSRadius)
+                gameballS.setPositionY(screenHeight - 25 - newballSRadius);
+
+            // Update the border and re-create the themeS with the new board dimensions.
+            border = {0, 25, (float)screenWidth, (float)screenHeight};
+
+            classic.~themeS();
+            gameballS.~ballS();
+            left.~paddleS();
+            right.~paddleS();
+            new (&left) paddleS(classic.getBorderWidth() + 5, screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE,
+                               (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode + themePath + "paddle.png");
+
+            new (&right) paddleS(screenWidth - 10 - (int)(screenWidth * 0.02f), screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE,
+                                (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode + themePath + "paddle.png");
+
+            new (&gameballS) ballS((int)newballSX, (int)newballSY, newballSRadius, classic.getballSColor(),
+                                 (int)(signSpeedX * screenWidth * 0.007f), (int)(signSpeedY * screenHeight * 0.005f), mode + themePath + "ball.png");
+
+            new (&classic) themeS(RED, BLACK, YELLOW, border, 5, mode + themePath + "background.png");
+        }
+        time_t now = time(0);
+        struct tm *localTime = localtime(&now);
+        char buffer[10];
+        strftime(buffer, sizeof(buffer), "%H:%M", localTime);
+
+        Vector2 pos = GetMousePosition();
+        bool isHover = CheckCollisionPointRec(pos, button);
+        isPaused = checkPauseS(isHover, &buttonColor, host);
+        if (!isPaused)
+        {
+            // Update current state (used for networking position scaling).
+            sts.x = gameballS.getPositionX();
+            sts.y = gameballS.getPositionY();
+            sts.p1 = left.getPositionY();
+            sts.p2 = right.getPositionY();
+
+            networkProcessEvents(host);
+            networkReceiveState(host, &dummy.x, &dummy.y, &dummy.p1, &dummy.p2);
+            cout << "Reaceived p2 as" << dummy.p2 << endl;
+            dummy.p2 *= screenHeight;
+            if (!((std::isinf(dummy.p2) || std::isnan(dummy.p2))) && dummy.p2 >= 0 && dummy.p2 <= screenHeight)
+                right.setPositionY((int)dummy.p2);
+
+            gameballS.update(left.getRec(), right.getRec(), score.getScore1(), score.getScore2());
+            left.update();
+            right.update();
+
+            networkSendState(host, NULL, (float)gameballS.getPositionX() / screenWidth,
+                             (float)gameballS.getPositionY() / screenHeight, (float)left.getPositionY() / screenHeight, (float)right.getPositionY());
+
+            BeginDrawing();
+            DrawRectangle(0, 0, screenWidth, 25, BLACK);
+            DrawText(TextFormat("Current Time: %s", buffer), 10, 5, 20, WHITE);
+            classic.drawBoard(screenWidth, screenHeight);
+            score.drawBoard(4);
+            left.drawpaddleS();
+            right.drawpaddleS();
+            gameballS.drawballS();
+            DrawRectangleRec(button, buttonColor);
+            DrawText("Pause", screenWidth - 65, 5, 15, WHITE);
+            EndDrawing();
+        }
+        else
+        {
+            BeginDrawing();
+            ClearBackground(BLACK);
+            DrawRectangleRec(button, buttonColor);
+            DrawText("Resume", screenWidth - 65, 5, 13, WHITE);
+            DrawText("PAUSED!!", screenWidth / 2, screenHeight / 2, 20, WHITE);
+            EndDrawing();
+        }
+        isPaused = receivePause(host, isPaused);
+    }
+
+    networkShutdown(host);
+    CloseWindow();
+    return 0;
+}
+
+int offlinePong(THEMES currTheme, int robotMode)
+{
+    string themePath;
+    if (currTheme == THEME1)
+        themePath = "fireAndIce/";
+    if (currTheme == THEME2)
+        themePath = "underWater/";
+    if (currTheme == THEME3)
+        themePath = "futuristic/";
+    if (currTheme == THEME4)
+        themePath = "neon/";
+    if (currTheme == THEME5)
+        themePath = "forestAndWood/";
+    if (currTheme == THEME6)
+        themePath = "spacegalaxy/";
+
+    Rectangle border = {0, 25, (float)screenWidth, (float)screenHeight};
+    themeOffline classic(RED, BLACK, border, 5, mode + themePath + "background.png");
+    paddleOffline left(10, screenHeight / 2 - (int)(screenHeight * 0.165f / 2),
+                       (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode + themePath + "paddle.png");
+    paddleOffline right(screenWidth - 30, screenHeight / 2 - (int)(screenHeight * 0.165f / 2),
+                        (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode + themePath + "paddle.png");
+    scoreBoardOffline score;
+
+    ballOffline gameballS(screenWidth / 2, screenHeight / 2, (screenWidth * 0.02f),
+                          (screenWidth * 0.007f), (screenHeight * 0.005f), mode + themePath + "ball.png");
+    Rectangle button = {(float)screenWidth - 70, 5, 60, 15};
+    Color buttonColor = WHITE;
+
+    while (!WindowShouldClose())
+    {
+        if (IsWindowResized())
+        {
+            int oldSW = screenWidth;
+            int oldSH = screenHeight;
+            screenWidth = GetScreenWidth();
+            screenHeight = GetScreenHeight() - 30;
+            int signSpeedX = (gameballS.getBallSSpeedX() < 0) ? -1 : 1;
+            int signSpeedY = (gameballS.getBallSSpeedY() < 0) ? -1 : 1;
+            float ballX_ratio = (float)gameballS.getPositionX() / oldSW;
+            float ballY_ratio = (float)gameballS.getPositionY() / oldSH;
+            int newBallRadius = (int)(screenWidth * 0.02f);
+            int newBallX = (int)(ballX_ratio * screenWidth);
+            int newBallY = (int)(ballY_ratio * screenHeight);
+            newBallX = Clamp(newBallX, newBallRadius, screenWidth - newBallRadius);
+            newBallY = Clamp(newBallY, 25 + newBallRadius, screenHeight - newBallRadius - 25);
+            int paddleHeight = (int)(screenHeight * 0.165f);
+            int paddleWidth = (int)(screenWidth * 0.02f);
+            classic.~themeOffline();
+            left.~paddleOffline();
+            right.~paddleOffline();
+            gameballS.~ballOffline();
+            border = {0, 25, (float)screenWidth, (float)screenHeight};
+            new (&classic) themeOffline(RED, BLACK, border, 5, mode + themePath + "background.png");
+            new (&left) paddleOffline(10, screenHeight / 2 - paddleHeight / 2, paddleHeight, paddleWidth, mode + themePath + "paddle.png");
+            new (&right) paddleOffline(screenWidth - 10 - paddleWidth, screenHeight / 2 - paddleHeight / 2, paddleHeight, paddleWidth, mode + themePath + "paddle.png");
+            new (&gameballS) ballOffline(newBallX, newBallY, newBallRadius, (int)(signSpeedX * screenWidth * 0.007f), (int)(signSpeedY * screenHeight * 0.005f), mode + themePath + "ball.png");
+            button = {(float)screenWidth - 70, 5, 60, 15};
+        }
+
+        Vector2 pos = GetMousePosition();
+        bool isHover = CheckCollisionPointRec(pos, button);
+        isPaused = checkPauseOffline(isHover, &buttonColor);
+
+        if (!isPaused)
+        {
+            left.update(true);
+
+            if (robotMode == 0)
+            {
+                int ballY = gameballS.getPositionY();
+                int paddleCenter = right.getPositionY() + right.getRec().height / 2;
+                float moveStep = screenHeight * 0.01f;
+                if (paddleCenter < ballY - 5)
+                {
+                    right.setPositionY(right.getPositionY() + moveStep);
+                }
+                else if (paddleCenter > ballY + 5)
+                {
+                    right.setPositionY(right.getPositionY() - moveStep);
+                }
+                right.setPositionY(Clamp(right.getPositionY(), 25.0f, (float)screenHeight - right.getRec().height + 25));
+            }
+            else
+            {
+                right.update(false);
+            }
+
+            gameballS.update(left.getRec(), right.getRec(), score.getScore1(), score.getScore2());
+
+            BeginDrawing();
+            classic.drawBoard(screenWidth, screenHeight);
+            score.drawBoard(4);
+            left.drawpaddleS();
+            right.drawpaddleS();
+            gameballS.drawballS();
+            DrawRectangleRec(button, buttonColor);
+            DrawText("Pause", screenWidth - 65, 5, 15, WHITE);
+            EndDrawing();
+        }
+        else
+        {
+            BeginDrawing();
+            ClearBackground(BLACK);
+            DrawRectangleRec(button, buttonColor);
+            DrawText("Resume", screenWidth - 65, 5, 13, WHITE);
+            DrawText("PAUSED!!", screenWidth / 2, screenHeight / 2, 20, WHITE);
+            EndDrawing();
+        }
+    }
+    return 0;
+}
 
 void mainMenu()
 {
@@ -723,7 +1921,7 @@ void mainMenu()
     const int baseHeight = 800;
 
     SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_WINDOW_HIGHDPI);
-    InitWindow(baseWidth,baseHeight, "PONG BALL GAME MENU");
+    InitWindow(baseWidth, baseHeight, "PONG BALL GAME MENU");
     SetWindowState(FLAG_WINDOW_RESIZABLE);
     SetTargetFPS(60);
     ScreenBounds = Rectangle{0, 0, static_cast<float>(GetScreenWidth()), static_cast<float>(GetScreenHeight())};
@@ -732,7 +1930,7 @@ void mainMenu()
     SetTextureFilter(UIComponent::primaryFont.texture, TEXTURE_FILTER_BILINEAR);
     SetTextureFilter(UIComponent::secondaryFont.texture, TEXTURE_FILTER_BILINEAR);
 
-    vector<UIComponent *> components, lobbyComponents, modeComponents, aboutComponents, onlineModeComponents,themeComponents;
+    vector<UIComponent *> components, lobbyComponents, modeComponents, aboutComponents, onlineModeComponents, themeComponents;
 
     Container mainMenu(
         {baseWidth / 2 - 450, baseHeight / 2 - 350},
@@ -752,7 +1950,7 @@ void mainMenu()
                        BUTTON_CERULEAN_HOVER, BUTTON_CERULEAN_PRESSED);
 
     ButtonTheme themeBtn({0, 0}, {600, 80}, BUTTON_RUST, "SELECT THEME", 40, WHITE,
-                    BUTTON_RUST_HOVER, BUTTON_RUST_PRESSED);
+                         BUTTON_RUST_HOVER, BUTTON_RUST_PRESSED);
 
     ButtonAbout aboutBtn({0, 0}, {600, 80}, BUTTON_FOREST, "ABOUT DEVELOPERS", 40, WHITE,
                          BUTTON_FOREST_HOVER, BUTTON_FOREST_PRESSED);
@@ -857,7 +2055,7 @@ void mainMenu()
 
     // Online mode components
     InputBox ipInput({0, 0}, {600, 60}, GRAY);
-    
+
     ButtonJoin joinBtn({0, 0}, {600, 80}, BUTTON_CERULEAN, "JOIN SERVER", 40, WHITE,
                        BUTTON_CERULEAN_HOVER, BUTTON_CERULEAN_PRESSED);
     ButtonCreate createBtn({0, 0}, {600, 80}, BUTTON_FOREST, "CREATE SERVER", 40, WHITE,
@@ -867,7 +2065,7 @@ void mainMenu()
     globalIPInput = &ipInput;
 
     // Setup online menu
-    
+
     onlineMenu.addInputBox(&ipInput, {100, 150});
     onlineMenu.addButton(&joinBtn, {100, 250});
     onlineMenu.addButton(&createBtn, {100, 350});
@@ -875,99 +2073,96 @@ void mainMenu()
     onlineModeComponents.push_back(&onlineMenu);
     components.push_back(&onlineMenu);
 
-// Theme Selection Container
-Container themeMenu(
-    {baseWidth/2 - 400, baseHeight/2 - 400},
-    {800, 800},
-    CONTAINER_COLOR,
-    "SELECT THEME",
-    70,
-    HeadingColor
-);
+    // Theme Selection Container
+    Container themeMenu(
+        {baseWidth / 2 - 400, baseHeight / 2 - 400},
+        {800, 800},
+        CONTAINER_COLOR,
+        "SELECT THEME",
+        70,
+        HeadingColor);
 
-// Theme 1: Fire & Ice (Orange Theme)
-ImageComponent theme1Img({0,0}, {200,150}, "assets/themes/fire_ice.png");
-ThemeFireIce theme1Btn({0,0}, {200,60}, 
-    BUTTON_ORANGE, "ICE AND FIRE", 30, WHITE,
-    BUTTON_ORANGE_HOVER, BUTTON_ORANGE_PRESSED);
+    // Theme 1: Fire & Ice (Orange Theme)
+    ImageComponent theme1Img({0, 0}, {200, 150}, "assets/themes/fire_ice.png");
+    ThemeFireIce theme1Btn({0, 0}, {200, 60},
+                           BUTTON_ORANGE, "ICE AND FIRE", 30, WHITE,
+                           BUTTON_ORANGE_HOVER, BUTTON_ORANGE_PRESSED);
 
-// Theme 2: Forest (Green Theme)
-ImageComponent theme2Img({0,0}, {200,150}, "assets/themes/forest.png");
-ThemeForest theme2Btn({0,0}, {200,60}, 
-    BUTTON_FOREST, "FOREST", 30, WHITE,
-    BUTTON_FOREST_HOVER, BUTTON_FOREST_PRESSED);
+    // Theme 2: Forest (Green Theme)
+    ImageComponent theme2Img({0, 0}, {200, 150}, "assets/themes/forest.png");
+    ThemeForest theme2Btn({0, 0}, {200, 60},
+                          BUTTON_FOREST, "FOREST", 30, WHITE,
+                          BUTTON_FOREST_HOVER, BUTTON_FOREST_PRESSED);
 
-// Theme 3: Neon (Cerulean Blue Theme)
-ImageComponent theme3Img({0,0}, {200,150}, "assets/themes/neon.png");
-ThemeNeon theme3Btn({0,0}, {200,60}, 
-    BUTTON_CERULEAN, "NEON", 30, WHITE,
-    BUTTON_CERULEAN_HOVER, BUTTON_CERULEAN_PRESSED);
+    // Theme 3: Neon (Cerulean Blue Theme)
+    ImageComponent theme3Img({0, 0}, {200, 150}, "assets/themes/neon.png");
+    ThemeNeon theme3Btn({0, 0}, {200, 60},
+                        BUTTON_CERULEAN, "NEON", 30, WHITE,
+                        BUTTON_CERULEAN_HOVER, BUTTON_CERULEAN_PRESSED);
 
-// Theme 4: Futuristic (Rust Theme)
-ImageComponent theme4Img({0,0}, {200,150}, "assets/themes/futuristic.png");
-ThemeFuturistic theme4Btn({0,0}, {200,60}, 
-    BUTTON_RUST, "FUTURISTIC", 30, WHITE,
-    BUTTON_RUST_HOVER, BUTTON_RUST_PRESSED);
+    // Theme 4: Futuristic (Rust Theme)
+    ImageComponent theme4Img({0, 0}, {200, 150}, "assets/themes/futuristic.png");
+    ThemeFuturistic theme4Btn({0, 0}, {200, 60},
+                              BUTTON_RUST, "FUTURISTIC", 30, WHITE,
+                              BUTTON_RUST_HOVER, BUTTON_RUST_PRESSED);
 
-// Theme 5: Underwater (Cerulean Blue Theme)
-ImageComponent theme5Img({0,0}, {200,150}, "assets/themes/underwater.png");
-ThemeUnderwater theme5Btn({0,0}, {200,60}, 
-    BUTTON_CERULEAN, "UNDERWATER", 30, WHITE,
-    BUTTON_CERULEAN_HOVER, BUTTON_CERULEAN_PRESSED);
+    // Theme 5: Underwater (Cerulean Blue Theme)
+    ImageComponent theme5Img({0, 0}, {200, 150}, "assets/themes/underwater.png");
+    ThemeUnderwater theme5Btn({0, 0}, {200, 60},
+                              BUTTON_CERULEAN, "UNDERWATER", 30, WHITE,
+                              BUTTON_CERULEAN_HOVER, BUTTON_CERULEAN_PRESSED);
 
-// Theme 6: Space (Carmine Red Theme)
-ImageComponent theme6Img({0,0}, {200,150}, "assets/themes/space.png");
-ThemeSpace theme6Btn({0,0}, {200,50}, 
-    BUTTON_CARMINE, "SPACE", 30, WHITE,
-    BUTTON_CARMINE_HOVER, BUTTON_CARMINE_PRESSED);
+    // Theme 6: Space (Carmine Red Theme)
+    ImageComponent theme6Img({0, 0}, {200, 150}, "assets/themes/space.png");
+    ThemeSpace theme6Btn({0, 0}, {200, 50},
+                         BUTTON_CARMINE, "SPACE", 30, WHITE,
+                         BUTTON_CARMINE_HOVER, BUTTON_CARMINE_PRESSED);
 
-// Back Button (Consistent with other screens)
-ButtonClose themeBackBtn({0,0}, {300,50}, 
-    BUTTON_CARMINE, "BACK", 34, WHITE,
-    BUTTON_CARMINE_HOVER, BUTTON_CARMINE_PRESSED);
+    // Back Button (Consistent with other screens)
+    ButtonClose themeBackBtn({0, 0}, {300, 50},
+                             BUTTON_CARMINE, "BACK", 34, WHITE,
+                             BUTTON_CARMINE_HOVER, BUTTON_CARMINE_PRESSED);
 
-                
-                // Grid layout parameters
-                const Vector2 startPos = {50, 160};
-                const float imageHeight = 150;
-                const float buttonYOffset = 160; // 150px image height + 10px spacing
-                const float colSpacing = 250;
-                const float rowSpacing = 250; // 300px row spacing + 10px buffer
-                
-                // Row 1
-                // Theme 1 - Fire & Ice
-                themeMenu.addImage(&theme1Img, {startPos.x, startPos.y});
-                themeMenu.addButton(&theme1Btn, {startPos.x, startPos.y + buttonYOffset});
-                
-                // Theme 2 - Forest
-                themeMenu.addImage(&theme2Img, {startPos.x + colSpacing, startPos.y});
-                themeMenu.addButton(&theme2Btn, {startPos.x + colSpacing, startPos.y + buttonYOffset});
-                
-                // Theme 3 - Neon
-                themeMenu.addImage(&theme3Img, {startPos.x + 2*colSpacing, startPos.y});
-                themeMenu.addButton(&theme3Btn, {startPos.x + 2*colSpacing, startPos.y + buttonYOffset});
-                
-                // Row 2
-                // Theme 4 - Futuristic
-                int padding = 37; // Padding for the second row
-                themeMenu.addImage(&theme4Img, {startPos.x, startPos.y + rowSpacing+padding});
-                themeMenu.addButton(&theme4Btn, {startPos.x, startPos.y + rowSpacing + buttonYOffset+padding});
-                
-                // Theme 5 - Underwater
-                themeMenu.addImage(&theme5Img, {startPos.x + colSpacing, startPos.y + rowSpacing+padding});
-                themeMenu.addButton(&theme5Btn, {startPos.x + colSpacing, startPos.y + rowSpacing + buttonYOffset+padding});
-                
-                // Theme 6 - Space
-                themeMenu.addImage(&theme6Img, {startPos.x + 2*colSpacing, startPos.y + rowSpacing+padding});
-                themeMenu.addButton(&theme6Btn, {startPos.x + 2*colSpacing, startPos.y + rowSpacing + buttonYOffset+padding});
-                
-                // Back button (centered below grid)
-                const float backButtonY = startPos.y + rowSpacing + imageHeight + 100;
-                themeMenu.addButton(&themeBackBtn, {250, backButtonY+padding+13});
+    // Grid layout parameters
+    const Vector2 startPos = {50, 160};
+    const float imageHeight = 150;
+    const float buttonYOffset = 160; // 150px image height + 10px spacing
+    const float colSpacing = 250;
+    const float rowSpacing = 250; // 300px row spacing + 10px buffer
+
+    // Row 1
+    // Theme 1 - Fire & Ice
+    themeMenu.addImage(&theme1Img, {startPos.x, startPos.y});
+    themeMenu.addButton(&theme1Btn, {startPos.x, startPos.y + buttonYOffset});
+
+    // Theme 2 - Forest
+    themeMenu.addImage(&theme2Img, {startPos.x + colSpacing, startPos.y});
+    themeMenu.addButton(&theme2Btn, {startPos.x + colSpacing, startPos.y + buttonYOffset});
+
+    // Theme 3 - Neon
+    themeMenu.addImage(&theme3Img, {startPos.x + 2 * colSpacing, startPos.y});
+    themeMenu.addButton(&theme3Btn, {startPos.x + 2 * colSpacing, startPos.y + buttonYOffset});
+
+    // Row 2
+    // Theme 4 - Futuristic
+    int padding = 37; // Padding for the second row
+    themeMenu.addImage(&theme4Img, {startPos.x, startPos.y + rowSpacing + padding});
+    themeMenu.addButton(&theme4Btn, {startPos.x, startPos.y + rowSpacing + buttonYOffset + padding});
+
+    // Theme 5 - Underwater
+    themeMenu.addImage(&theme5Img, {startPos.x + colSpacing, startPos.y + rowSpacing + padding});
+    themeMenu.addButton(&theme5Btn, {startPos.x + colSpacing, startPos.y + rowSpacing + buttonYOffset + padding});
+
+    // Theme 6 - Space
+    themeMenu.addImage(&theme6Img, {startPos.x + 2 * colSpacing, startPos.y + rowSpacing + padding});
+    themeMenu.addButton(&theme6Btn, {startPos.x + 2 * colSpacing, startPos.y + rowSpacing + buttonYOffset + padding});
+
+    // Back button (centered below grid)
+    const float backButtonY = startPos.y + rowSpacing + imageHeight + 100;
+    themeMenu.addButton(&themeBackBtn, {250, backButtonY + padding + 13});
 
     themeComponents.push_back(&themeMenu);
     components.push_back(&themeMenu);
-
 
     // Main loop
     while (!WindowShouldClose())
@@ -1012,9 +2207,17 @@ ButtonClose themeBackBtn({0,0}, {300,50},
             }
             break;
         case GAMEPLAY:
-            DrawText("Gameplay Started!", baseWidth / 2 - 100, baseHeight / 2, 30, WHITE);
-            if (IsKeyPressed(KEY_ESCAPE))
-                currentState = LOBBY;
+            int endVal;
+            if (currentMode == OFFLINE)
+            {
+                endVal = offlinePong(currentTheme,1);
+            }
+            if (currentMode == COMPUTER) 
+            {
+                endVal = offlinePong(currentTheme,0);
+            }
+            if (!endVal)
+                return;
             break;
         case ABOUT:
             bg.handleEvent();
@@ -1033,6 +2236,13 @@ ButtonClose themeBackBtn({0,0}, {300,50},
                 c->handleEvent();
                 c->draw();
             }
+            if(!isServer) {
+                endVal = runClient(currentTheme,globalIPInput->getText());
+            }
+            else {
+                endVal = runServer(currentTheme);
+            }
+            if(!endVal) return;
             break;
         case THEME:
             bg.handleEvent();
@@ -1053,7 +2263,8 @@ ButtonClose themeBackBtn({0,0}, {300,50},
     }
     UIComponent::UnloadFonts();
 }
-int main() {
-    cout<<"\nRunning\n";
+int main()
+{
+    cout << "\nRunning\n";
     mainMenu();
 }

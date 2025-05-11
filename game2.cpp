@@ -21,6 +21,13 @@ using namespace std;
 int screenHeight = 570, screenWidth = 600; 
 bool isPaused = false;                     
 string mode = "Assets/";
+
+float Clamp(float value, float min, float max)
+{
+    return (value < min) ? min : (value > max) ? max
+                                               : value;
+}
+
 struct state
 {
     float x;
@@ -28,12 +35,6 @@ struct state
     float p2;
     float p1;
 };
-
-float Clamp(float value, float min, float max)
-{
-    return (value < min) ? min : (value > max) ? max
-                                               : value;
-}
 
 bool checkPauseC(bool isHover, Color *buttonColor, ENetPeer *peer, ENetHost *host)
 {
@@ -365,9 +366,8 @@ int runClient()
     SetTargetFPS(60);
     SetWindowState(FLAG_WINDOW_RESIZABLE);
 
-    Color background = {50, 168, 82, 255};
     Rectangle border = {0, 25, (float)screenWidth, (float)screenHeight}; // Play area starts at Y=25
-    themeC classic(RED, background, YELLOW, border, 5, mode + mode2 + "background.png");
+    themeC classic(RED, BLACK, YELLOW, border, 5, mode + mode2 + "background.png");
 
     paddleC left(classic.getBorderWidth() + 5, screenHeight / 2 - (int)(screenHeight * 0.165f / 2), WHITE,
                  (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode + mode2 + "paddle.png");
