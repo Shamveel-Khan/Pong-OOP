@@ -297,6 +297,7 @@ class themeC
     Color border;
     Rectangle boundaries;
     int borderWidth;
+
 public:
     themeC(Color b, Color ba, Color bo, Rectangle bou, int bw, string name)
     {
@@ -319,7 +320,7 @@ public:
     void drawBoard()
     {
         ClearBackground(background);
-        DrawRectangle(0, 0, screenWidth, 25, BLACK); 
+        DrawRectangle(0, 0, screenWidth, 25, BLACK);
         DrawRectangleLinesEx(boundaries, borderWidth, YELLOW);
         DrawTexture(pi, boundaries.x, boundaries.y, WHITE);
         DrawCircleLines(boundaries.x + boundaries.width / 2, boundaries.y + boundaries.height / 2, 70, WHITE);
@@ -1519,21 +1520,38 @@ public:
 int runClient(THEMES currTheme, string ipInput)
 {
     string ip = ipInput;
+    int scoreChoice;
     string themePath;
-
     if (currTheme == THEME1)
+    {
         themePath = "fireAndIce/";
+        scoreChoice = 2;
+    }
     if (currTheme == THEME2)
+    {
         themePath = "underWater/";
+        scoreChoice = 1;
+    }
     if (currTheme == THEME3)
+    {
         themePath = "futuristic/";
+        scoreChoice = 2;
+    }
     if (currTheme == THEME4)
+    {
         themePath = "neon/";
+        scoreChoice = 2;
+    }
     if (currTheme == THEME5)
+    {
         themePath = "forestAndWood/";
+        scoreChoice = 3;
+    }
     if (currTheme == THEME6)
+    {
         themePath = "spacegalaxy/";
-
+        scoreChoice = 1;
+    }
     ENetHost *host = NULL;
     ENetPeer *peer = NULL;
     if (networkInitialize(MODE_CLIENT, ip.c_str(), &host, &peer) != 0)
@@ -1613,7 +1631,8 @@ int runClient(THEMES currTheme, string ipInput)
             if (frameNo % 2 == 0)
             {
                 networkReceiveScores(host, &scoreLeft, &scoreRight);
-                if(scoreLeft > 0 && scoreRight >0 && scoreLeft<50 && scoreRight<50){
+                if (scoreLeft > 0 && scoreRight > 0 && scoreLeft < 50 && scoreRight < 50)
+                {
                     *(score.getScore1()) = scoreLeft;
                     *(score.getScore2()) = scoreRight;
                 }
@@ -1643,7 +1662,7 @@ int runClient(THEMES currTheme, string ipInput)
             right.update();
             BeginDrawing();
             classic.drawBoard();
-            score.drawBoard(4);
+            score.drawBoard(scoreChoice);
             left.drawpaddleC();
             right.drawpaddleC();
             gameballC.drawballC();
@@ -1664,29 +1683,64 @@ int runClient(THEMES currTheme, string ipInput)
             EndDrawing();
         }
         isPaused = receivePause(host, isPaused);
+        if ((int)frameNo / 60 == 59)
+        {
+        }
     }
-
+    if ((int)frameNo / 60 >= 59)
+    {
+        if (*(score.getScore1()) > *(score.getScore2()))
+        {
+            return 1;
+        }
+        else if (*(score.getScore1()) < *(score.getScore2()))
+        {
+            return 2;
+        }
+        else
+        {
+            return 0;
+        }
+    }
     networkShutdown(host);
-    CloseWindow();
     return 0;
 }
 
 // below is run server to run the server
 int runServer(THEMES currTheme)
 {
+    int scoreChoice;
     string themePath;
     if (currTheme == THEME1)
+    {
         themePath = "fireAndIce/";
+        scoreChoice = 2;
+    }
     if (currTheme == THEME2)
+    {
         themePath = "underWater/";
+        scoreChoice = 1;
+    }
     if (currTheme == THEME3)
+    {
         themePath = "futuristic/";
+        scoreChoice = 2;
+    }
     if (currTheme == THEME4)
+    {
         themePath = "neon/";
+        scoreChoice = 2;
+    }
     if (currTheme == THEME5)
+    {
         themePath = "forestAndWood/";
+        scoreChoice = 3;
+    }
     if (currTheme == THEME6)
+    {
         themePath = "spacegalaxy/";
+        scoreChoice = 1;
+    }
 
     int oldSW = 800, oldSH = 770;
     int frameNo = 0;
@@ -1787,7 +1841,7 @@ int runServer(THEMES currTheme)
 
             BeginDrawing();
             classic.drawBoard(screenWidth, screenHeight);
-            score.drawBoard(4);
+            score.drawBoard(scoreChoice);
             left.drawpaddleS();
             right.drawpaddleS();
             gameballS.drawballS();
@@ -1808,28 +1862,50 @@ int runServer(THEMES currTheme)
             EndDrawing();
         }
         isPaused = receivePause(host, isPaused);
+        if ((int)frameNo / 60 >= 59)
+        {
+            return 0;
+        }
     }
 
     networkShutdown(host);
-    CloseWindow();
     return 0;
 }
 
 int offlinePong(THEMES currTheme, int robotMode)
 {
+    int scoreChoice;
     string themePath;
     if (currTheme == THEME1)
+    {
         themePath = "fireAndIce/";
+        scoreChoice = 2;
+    }
     if (currTheme == THEME2)
+    {
         themePath = "underWater/";
+        scoreChoice = 1;
+    }
     if (currTheme == THEME3)
+    {
         themePath = "futuristic/";
+        scoreChoice = 2;
+    }
     if (currTheme == THEME4)
+    {
         themePath = "neon/";
+        scoreChoice = 2;
+    }
     if (currTheme == THEME5)
+    {
         themePath = "forestAndWood/";
+        scoreChoice = 3;
+    }
     if (currTheme == THEME6)
+    {
         themePath = "spacegalaxy/";
+        scoreChoice = 1;
+    }
 
     Rectangle border = {0, 25, (float)screenWidth, (float)screenHeight};
     themeOffline classic(RED, BLACK, border, 5, mode + themePath + "background.png");
@@ -1843,6 +1919,7 @@ int offlinePong(THEMES currTheme, int robotMode)
                           (screenWidth * 0.007f), (screenHeight * 0.005f), mode + themePath + "ball.png");
     Rectangle button = {(float)screenWidth - 70, 5, 60, 15};
     Color buttonColor = WHITE;
+    int frameNo = 0;
 
     while (!WindowShouldClose())
     {
@@ -1911,9 +1988,11 @@ int offlinePong(THEMES currTheme, int robotMode)
             left.drawpaddleS();
             right.drawpaddleS();
             gameballS.drawballS();
+            DrawText(to_string((int)frameNo / 60).c_str(), 10, 5, 20, WHITE);
             DrawRectangleRec(button, buttonColor);
             DrawText("Pause", screenWidth - 65, 5, 15, WHITE);
             EndDrawing();
+            frameNo++;
         }
         else
         {
@@ -1924,8 +2003,91 @@ int offlinePong(THEMES currTheme, int robotMode)
             DrawText("PAUSED!!", screenWidth / 2, screenHeight / 2, 20, WHITE);
             EndDrawing();
         }
+        if ((int)frameNo / 60 >= 59)
+        {
+            return 0;
+        }
     }
     return 0;
+}
+
+int winningPage(int endVal, MODES currentMode)
+{
+    const char *filename;
+
+    if (currentMode == OFFLINE || currentMode == ONLINE)
+    {
+        if (endVal == 1)
+        {
+            filename = "player2.jpg";
+        }
+        else if (endVal == 2)
+        {
+            filename = "player1.jpg";
+        }
+        else
+        {
+            filename = "tie.jpg";
+        }
+    }
+    else if (currentMode == COMPUTER)
+    {
+        if (endVal == 1)
+        {
+            filename = "playerAi.jpg";
+        }
+        else if (endVal == 2)
+        {
+            filename = "player.jpg";
+        }
+        else
+        {
+            filename = "tie.jpg";
+        }
+    }
+    else
+    {
+        return 0;
+    }
+
+    char imagePath[256];
+    snprintf(imagePath, sizeof(imagePath), "Assets/winningPage/%s", filename);
+    Image image = LoadImage(imagePath);
+    Texture2D texture = LoadTextureFromImage(image);
+    UnloadImage(image);
+
+    bool isHome = false;
+    bool shouldExit = false;
+
+    while (!shouldExit)
+    {
+        BeginDrawing();
+        ClearBackground((Color){58, 84, 59, 255});
+
+        DrawTexturePro(
+            texture,
+            (Rectangle){0, 0, (float)texture.width, (float)texture.height},
+            (Rectangle){0, 0, (float)GetScreenWidth(), (float)GetScreenHeight()},
+            (Vector2){0, 0},
+            0.0f,
+            WHITE);
+
+        if (IsKeyPressed(KEY_H))
+        {
+            isHome = true;
+            shouldExit = true;
+        }
+        else if (IsKeyPressed(KEY_ESCAPE))
+        {
+            isHome = false;
+            shouldExit = true;
+        }
+
+        EndDrawing();
+    }
+
+    UnloadTexture(texture);
+    return isHome ? 1 : 0;
 }
 
 void mainMenu()
@@ -2220,7 +2382,7 @@ void mainMenu()
             }
             break;
         case GAMEPLAY:
-            int endVal;
+            int endVal, replayVal;
             if (currentMode == OFFLINE)
             {
                 endVal = offlinePong(currentTheme, 1);
@@ -2229,8 +2391,15 @@ void mainMenu()
             {
                 endVal = offlinePong(currentTheme, 0);
             }
-            if (!endVal)
+            replayVal = winningPage(endVal, currentMode);
+            if (replayVal)
+            {
+                currentState = LOBBY;
+            }
+            else
+            {
                 return;
+            }
             break;
         case ABOUT:
             bg.handleEvent();
@@ -2257,8 +2426,6 @@ void mainMenu()
             {
                 endVal = runServer(currentTheme);
             }
-            if (!endVal)
-                return;
             break;
         case THEME:
             bg.handleEvent();
@@ -2280,6 +2447,5 @@ void mainMenu()
 }
 int main()
 {
-    cout << "\nRunning\n";
     mainMenu();
 }
