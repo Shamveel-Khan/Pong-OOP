@@ -84,6 +84,13 @@ public:
             scoreColor = (Color){124, 252, 0, 255};
             fontSize = 0.075 * (screenWidth + screenHeight);
             break;
+        case 4:
+            posX = 0.175 * screenWidth;
+            posX2 = 0.6875 * screenWidth;
+            posY = 0.375 * screenHeight;
+            scoreColor = (Color){255,172,28,255};
+            fontSize = 0.1625 * (screenWidth + screenHeight);
+            break;
         default:
             posX = 0.175 * screenWidth;
             posX2 = 0.6875 * screenWidth;
@@ -267,6 +274,13 @@ public:
             posY = 0.4575 * screenHeight;
             scoreColor = (Color){124, 252, 0, 255};
             fontSize = 0.075 * (screenWidth + screenHeight);
+            break;
+        case 4:
+            posX = 0.175 * screenWidth;
+            posX2 = 0.6875 * screenWidth;
+            posY = 0.375 * screenHeight;
+            scoreColor = (Color){255,172,28,255};
+            fontSize = 0.1625 * (screenWidth + screenHeight);
             break;
         default:
             posX = 0.175 * screenWidth;
@@ -545,6 +559,13 @@ public:
             posY = 0.4575 * screenHeight;
             scoreColor = (Color){124, 252, 0, 255};
             fontSize = 0.075 * (screenWidth + screenHeight);
+            break;
+        case 4:
+            posX = 0.175 * screenWidth;
+            posX2 = 0.6875 * screenWidth;
+            posY = 0.375 * screenHeight;
+            scoreColor = (Color){255,172,28,255};
+            fontSize = 0.1625 * (screenWidth + screenHeight);
             break;
         default:
             posX = 0.175 * screenWidth;
@@ -1529,23 +1550,23 @@ int runClient(THEMES currTheme, string ipInput)
     }
     if (currTheme == THEME2)
     {
-        themePath = "underWater/";
-        scoreChoice = 1;
+        themePath = "forestAndWood/";
+        scoreChoice = 3;
     }
     if (currTheme == THEME3)
-    {
-        themePath = "futuristic/";
-        scoreChoice = 2;
-    }
-    if (currTheme == THEME4)
     {
         themePath = "neon/";
         scoreChoice = 2;
     }
+    if (currTheme == THEME4)
+    {
+        themePath = "futuristic/";
+        scoreChoice = 2;
+    }
     if (currTheme == THEME5)
     {
-        themePath = "forestAndWood/";
-        scoreChoice = 3;
+        themePath = "underWater/";
+        scoreChoice = 1;
     }
     if (currTheme == THEME6)
     {
@@ -1718,22 +1739,22 @@ int runServer(THEMES currTheme)
     }
     if (currTheme == THEME2)
     {
-        themePath = "underWater/";
+        themePath = "forestAndWood/";
         scoreChoice = 1;
     }
     if (currTheme == THEME3)
     {
-        themePath = "futuristic/";
+        themePath = "neon/";
         scoreChoice = 2;
     }
     if (currTheme == THEME4)
     {
-        themePath = "neon/";
+        themePath = "futuristic/";
         scoreChoice = 2;
     }
     if (currTheme == THEME5)
     {
-        themePath = "forestAndWood/";
+        themePath = "underWater/";
         scoreChoice = 3;
     }
     if (currTheme == THEME6)
@@ -1883,22 +1904,22 @@ int offlinePong(THEMES currTheme, int robotMode)
     }
     if (currTheme == THEME2)
     {
-        themePath = "underWater/";
-        scoreChoice = 1;
+        themePath = "forestAndWood/";
+        scoreChoice = 3;
     }
     if (currTheme == THEME3)
-    {
-        themePath = "futuristic/";
-        scoreChoice = 2;
-    }
-    if (currTheme == THEME4)
     {
         themePath = "neon/";
         scoreChoice = 2;
     }
+    if (currTheme == THEME4)
+    {
+        themePath = "futuristic/";
+        scoreChoice = 2;
+    }
     if (currTheme == THEME5)
     {
-        themePath = "forestAndWood/";
+        themePath = "underWater/";
         scoreChoice = 3;
     }
     if (currTheme == THEME6)
@@ -1984,7 +2005,7 @@ int offlinePong(THEMES currTheme, int robotMode)
 
             BeginDrawing();
             classic.drawBoard(screenWidth, screenHeight);
-            score.drawBoard(4);
+            score.drawBoard(scoreChoice);
             left.drawpaddleS();
             right.drawpaddleS();
             gameballS.drawballS();
