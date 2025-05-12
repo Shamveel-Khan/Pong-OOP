@@ -2202,7 +2202,7 @@ void mainMenu()
     Label dev1Label({0, 0}, "MUZAMIL SULEMAN", 50, TextColor);
     ButtonViewProfile dev1Button({0, 0}, {600, 80}, BUTTON_RUST, "VIEW PROFILE", 36, WHITE,
                                  BUTTON_RUST_HOVER, BUTTON_RUST_PRESSED);
-    dev1Button.setLink("https://github.com/MUZAMILALISULEMAN");
+    dev1Button.setLink("https://media.4-paws.org/3/4/b/f/34bff9ed1c86d4bb706c9945e818f3562405b330/VP0113037-1927x1333-1920x1328.jpg");
     Label dev2Label({0, 0}, "SHAMVEEL KHAN", 50, TextColor);
     ButtonViewProfile dev2Button({0, 0}, {600, 80}, BUTTON_RUST, "VIEW PROFILE", 36, WHITE,
                                  BUTTON_RUST_HOVER, BUTTON_RUST_PRESSED);

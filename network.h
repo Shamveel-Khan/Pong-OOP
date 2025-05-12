@@ -1,10 +1,9 @@
 #ifndef NETWORK_H
 #define NETWORK_H
 
-#include <stddef.h>   // For size_t
-#include <stdint.h>   // For uint32_t and uint8_t
+#include <stddef.h>  
+#include <stdint.h>  
 
-// Forward declarations to hide full ENet definitions:
 typedef struct _ENetAddress ENetAddress;
 typedef struct _ENetHost    ENetHost;
 typedef struct _ENetPeer    ENetPeer;
