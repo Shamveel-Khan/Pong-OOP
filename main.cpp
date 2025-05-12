@@ -39,13 +39,14 @@ float Clamp(float value, float min, float max)
         return max;
     return value;
 }
+const Color BUTTON_CARMINE = {155, 34, 38, 255};
 
 bool checkPauseOffline(bool isHover, Color *buttonColor)
 {
     if (isHover)
         *buttonColor = DARKGRAY;
     else
-        *buttonColor = WHITE;
+        *buttonColor = BUTTON_CARMINE;
     if (isHover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
         isPaused = !isPaused;
     return isPaused;
@@ -88,7 +89,7 @@ public:
             posX = 0.175 * screenWidth;
             posX2 = 0.6875 * screenWidth;
             posY = 0.375 * screenHeight;
-            scoreColor = (Color){255,172,28,255};
+            scoreColor = (Color){255, 172, 28, 255};
             fontSize = 0.1625 * (screenWidth + screenHeight);
             break;
         default:
@@ -227,7 +228,7 @@ bool checkPauseC(bool isHover, Color *buttonColor, ENetPeer *peer, ENetHost *hos
     }
     else
     {
-        *buttonColor = WHITE;
+        *buttonColor = BUTTON_CARMINE;
     }
     if (isHover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
     {
@@ -279,7 +280,7 @@ public:
             posX = 0.175 * screenWidth;
             posX2 = 0.6875 * screenWidth;
             posY = 0.375 * screenHeight;
-            scoreColor = (Color){255,172,28,255};
+            scoreColor = (Color){255, 172, 28, 255};
             fontSize = 0.1625 * (screenWidth + screenHeight);
             break;
         default:
@@ -512,7 +513,7 @@ bool checkPauseS(bool isHover, Color *buttonColor, ENetHost *host)
     }
     else
     {
-        *buttonColor = WHITE;
+        *buttonColor = BUTTON_CARMINE;
     }
     if (isHover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
     {
@@ -564,7 +565,7 @@ public:
             posX = 0.175 * screenWidth;
             posX2 = 0.6875 * screenWidth;
             posY = 0.375 * screenHeight;
-            scoreColor = (Color){255,172,28,255};
+            scoreColor = (Color){255, 172, 28, 255};
             fontSize = 0.1625 * (screenWidth + screenHeight);
             break;
         default:
@@ -808,7 +809,6 @@ const Color BUTTON_CERULEAN_PRESSED = {15, 110, 166, 255};
 const Color BUTTON_RUST = {187, 62, 3, 255};
 const Color BUTTON_RUST_HOVER = {216, 99, 23, 255};
 const Color BUTTON_RUST_PRESSED = {148, 49, 0, 255};
-const Color BUTTON_CARMINE = {155, 34, 38, 255};
 const Color BUTTON_CARMINE_HOVER = {186, 58, 62, 255};
 const Color BUTTON_CARMINE_PRESSED = {124, 27, 30, 255};
 const Color BUTTON_FOREST = {34, 139, 34, 255};
@@ -1703,12 +1703,12 @@ int runClient(THEMES currTheme, string ipInput)
             DrawRectangleRec(button, buttonColor);
 
             DrawTexturePro(
-            pausedTexture,
-            (Rectangle){0, 0, (float)pausedTexture.width, (float)pausedTexture.height-30},
-            (Rectangle){0, 0, (float)GetScreenWidth(), (float)GetScreenHeight()-30},
-            (Vector2){0, 0},
-            0.0f,
-            WHITE);
+                pausedTexture,
+                (Rectangle){0, 0, (float)pausedTexture.width, (float)pausedTexture.height - 30},
+                (Rectangle){0, 0, (float)GetScreenWidth(), (float)GetScreenHeight() - 30},
+                (Vector2){0, 0},
+                0.0f,
+                WHITE);
 
             EndDrawing();
         }
@@ -1889,12 +1889,12 @@ int runServer(THEMES currTheme)
             DrawRectangleRec(button, buttonColor);
 
             DrawTexturePro(
-            pausedTexture,
-            (Rectangle){0, 0, (float)pausedTexture.width, (float)pausedTexture.height-30},
-            (Rectangle){0, 0, (float)GetScreenWidth(), (float)GetScreenHeight()-30},
-            (Vector2){0, 0},
-            0.0f,
-            WHITE);
+                pausedTexture,
+                (Rectangle){0, 0, (float)pausedTexture.width, (float)pausedTexture.height - 30},
+                (Rectangle){0, 0, (float)GetScreenWidth(), (float)GetScreenHeight() - 30},
+                (Vector2){0, 0},
+                0.0f,
+                WHITE);
 
             EndDrawing();
         }
@@ -2040,12 +2040,12 @@ int offlinePong(THEMES currTheme, int robotMode)
             DrawRectangleRec(button, buttonColor);
 
             DrawTexturePro(
-            pausedTexture,
-            (Rectangle){0, 0, (float)pausedTexture.width, (float)pausedTexture.height-30},
-            (Rectangle){0, 0, (float)GetScreenWidth(), (float)GetScreenHeight()-30},
-            (Vector2){0, 0},
-            0.0f,
-            WHITE);
+                pausedTexture,
+                (Rectangle){0, 0, (float)pausedTexture.width, (float)pausedTexture.height - 30},
+                (Rectangle){0, 0, (float)GetScreenWidth(), (float)GetScreenHeight() - 30},
+                (Vector2){0, 0},
+                0.0f,
+                WHITE);
 
             EndDrawing();
         }
@@ -2100,11 +2100,11 @@ int winningPage(int endVal, MODES currentMode)
 
 void mainMenu()
 {
-    const int baseWidth = 800;
-    const int baseHeight = 800;
+    const int baseWidth = 1920;
+    const int baseHeight = 1080;
 
     SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_WINDOW_HIGHDPI);
-    InitWindow(baseWidth, baseHeight, "PONG BALL GAME MENU");
+    InitWindow(800, 800, "PONG BALL GAME MENU");
     SetWindowState(FLAG_WINDOW_RESIZABLE);
     SetTargetFPS(60);
     ScreenBounds = Rectangle{0, 0, static_cast<float>(GetScreenWidth()), static_cast<float>(GetScreenHeight())};
@@ -2202,7 +2202,7 @@ void mainMenu()
     Label dev1Label({0, 0}, "MUZAMIL SULEMAN", 50, TextColor);
     ButtonViewProfile dev1Button({0, 0}, {600, 80}, BUTTON_RUST, "VIEW PROFILE", 36, WHITE,
                                  BUTTON_RUST_HOVER, BUTTON_RUST_PRESSED);
-    dev1Button.setLink("https://media.4-paws.org/3/4/b/f/34bff9ed1c86d4bb706c9945e818f3562405b330/VP0113037-1927x1333-1920x1328.jpg");
+    dev1Button.setLink("https://github.com/MUZAMILALISULEMAN");
     Label dev2Label({0, 0}, "SHAMVEEL KHAN", 50, TextColor);
     ButtonViewProfile dev2Button({0, 0}, {600, 80}, BUTTON_RUST, "VIEW PROFILE", 36, WHITE,
                                  BUTTON_RUST_HOVER, BUTTON_RUST_PRESSED);
@@ -2346,7 +2346,7 @@ void mainMenu()
 
     themeComponents.push_back(&themeMenu);
     components.push_back(&themeMenu);
-
+    int flag = 1;
     // Main loop
     while (!WindowShouldClose())
     {
@@ -2359,6 +2359,14 @@ void mainMenu()
         {
             ScreenBounds = Rectangle{0, 0, static_cast<float>(GetScreenWidth()), static_cast<float>(GetScreenHeight())};
             UIComponent::setScale(sx, sy);
+            for (auto c : components)
+            {
+                c->updatePosition();
+            }
+        }
+        if (currentState == GAMEPLAY && flag == 1)
+        {
+            flag = 0;
             for (auto c : components)
             {
                 c->updatePosition();
