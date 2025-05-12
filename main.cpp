@@ -1646,6 +1646,8 @@ int runClient(THEMES currTheme, string ipInput)
         Rectangle button = {(float)screenWidth - 70, 5, 60, 15};
         bool isHover = CheckCollisionPointRec(mousePos, button);
         isPaused = checkPauseC(isHover, &buttonColor, peer, host);
+        Image paused = LoadImage("Assets/winningPage/paused.jpg");
+        Texture2D pausedTexture = LoadTextureFromImage(paused);
 
         if (!isPaused)
         {
@@ -1699,14 +1701,18 @@ int runClient(THEMES currTheme, string ipInput)
             BeginDrawing();
             ClearBackground(BLACK);
             DrawRectangleRec(button, buttonColor);
-            DrawText("PAUSED!!", screenWidth / 2, (screenHeight + 30) / 2, 20, WHITE); // Center in window
-            DrawText("Resume", screenWidth - 65, 5, 13, WHITE);
+
+            DrawTexturePro(
+            pausedTexture,
+            (Rectangle){0, 0, (float)pausedTexture.width, (float)pausedTexture.height-30},
+            (Rectangle){0, 0, (float)GetScreenWidth(), (float)GetScreenHeight()-30},
+            (Vector2){0, 0},
+            0.0f,
+            WHITE);
+
             EndDrawing();
         }
         isPaused = receivePause(host, isPaused);
-        if ((int)frameNo / 60 == 59)
-        {
-        }
     }
     if ((int)frameNo / 60 >= 59)
     {
@@ -1786,6 +1792,8 @@ int runServer(THEMES currTheme)
 
     Rectangle button = {(float)screenWidth - 70, 5, 60, 15};
     Color buttonColor = WHITE;
+    Image paused = LoadImage("Assets/winningPage/paused.jpg");
+    Texture2D pausedTexture = LoadTextureFromImage(paused);
 
     while (!WindowShouldClose())
     {
@@ -1835,6 +1843,7 @@ int runServer(THEMES currTheme)
         Vector2 pos = GetMousePosition();
         bool isHover = CheckCollisionPointRec(pos, button);
         isPaused = checkPauseS(isHover, &buttonColor, host);
+
         if (!isPaused)
         {
             sts.x = gameballS.getPositionX();
@@ -1878,8 +1887,15 @@ int runServer(THEMES currTheme)
             BeginDrawing();
             ClearBackground(BLACK);
             DrawRectangleRec(button, buttonColor);
-            DrawText("Resume", screenWidth - 65, 5, 13, WHITE);
-            DrawText("PAUSED!!", screenWidth / 2, screenHeight / 2, 20, WHITE);
+
+            DrawTexturePro(
+            pausedTexture,
+            (Rectangle){0, 0, (float)pausedTexture.width, (float)pausedTexture.height-30},
+            (Rectangle){0, 0, (float)GetScreenWidth(), (float)GetScreenHeight()-30},
+            (Vector2){0, 0},
+            0.0f,
+            WHITE);
+
             EndDrawing();
         }
         isPaused = receivePause(host, isPaused);
@@ -1888,7 +1904,7 @@ int runServer(THEMES currTheme)
             return 0;
         }
     }
-
+    UnloadTexture(pausedTexture);
     networkShutdown(host);
     return 0;
 }
@@ -1941,6 +1957,8 @@ int offlinePong(THEMES currTheme, int robotMode)
     Rectangle button = {(float)screenWidth - 70, 5, 60, 15};
     Color buttonColor = WHITE;
     int frameNo = 0;
+    Image paused = LoadImage("Assets/winningPage/paused.jpg");
+    Texture2D pausedTexture = LoadTextureFromImage(paused);
 
     while (!WindowShouldClose())
     {
@@ -2020,8 +2038,15 @@ int offlinePong(THEMES currTheme, int robotMode)
             BeginDrawing();
             ClearBackground(BLACK);
             DrawRectangleRec(button, buttonColor);
-            DrawText("Resume", screenWidth - 65, 5, 13, WHITE);
-            DrawText("PAUSED!!", screenWidth / 2, screenHeight / 2, 20, WHITE);
+
+            DrawTexturePro(
+            pausedTexture,
+            (Rectangle){0, 0, (float)pausedTexture.width, (float)pausedTexture.height-30},
+            (Rectangle){0, 0, (float)GetScreenWidth(), (float)GetScreenHeight()-30},
+            (Vector2){0, 0},
+            0.0f,
+            WHITE);
+
             EndDrawing();
         }
         if ((int)frameNo / 60 >= 59)
@@ -2029,51 +2054,13 @@ int offlinePong(THEMES currTheme, int robotMode)
             return 0;
         }
     }
+    UnloadTexture(pausedTexture);
     return 0;
 }
 
 int winningPage(int endVal, MODES currentMode)
 {
-    const char *filename;
-
-    if (currentMode == OFFLINE || currentMode == ONLINE)
-    {
-        if (endVal == 1)
-        {
-            filename = "player2.jpg";
-        }
-        else if (endVal == 2)
-        {
-            filename = "player1.jpg";
-        }
-        else
-        {
-            filename = "tie.jpg";
-        }
-    }
-    else if (currentMode == COMPUTER)
-    {
-        if (endVal == 1)
-        {
-            filename = "playerAi.jpg";
-        }
-        else if (endVal == 2)
-        {
-            filename = "player.jpg";
-        }
-        else
-        {
-            filename = "tie.jpg";
-        }
-    }
-    else
-    {
-        return 0;
-    }
-
-    char imagePath[256];
-    snprintf(imagePath, sizeof(imagePath), "Assets/winningPage/%s", filename);
-    Image image = LoadImage(imagePath);
+    Image image = LoadImage("Assets/winningPage/over.jpg");
     Texture2D texture = LoadTextureFromImage(image);
     UnloadImage(image);
 
