@@ -15,8 +15,8 @@ using namespace std;
 #define CloseWindow CloseWindow
 #define ShowCursor ShowCursor
 
-int screenWidth = 800;
-int screenHeight = 770;
+float screenWidth;
+float screenHeight;
 bool isPaused = false;
 int isServer = false;
 int runOnline = 0;
@@ -2100,12 +2100,11 @@ int winningPage(int endVal, MODES currentMode)
 
 void mainMenu()
 {
-    const int baseWidth = 1920;
-    const int baseHeight = 1080;
+    screenWidth = 1920.0;
+    screenHeight = 1080.0;
 
     SetConfigFlags(FLAG_MSAA_4X_HINT | FLAG_WINDOW_HIGHDPI);
-    InitWindow(800, 800, "PONG BALL GAME MENU");
-    SetWindowState(FLAG_WINDOW_RESIZABLE);
+    InitWindow(screenWidth, screenHeight, "PONG BALL GAME MENU");
     SetTargetFPS(60);
     ScreenBounds = Rectangle{0, 0, static_cast<float>(GetScreenWidth()), static_cast<float>(GetScreenHeight())};
 
@@ -2116,7 +2115,7 @@ void mainMenu()
     vector<UIComponent *> components, lobbyComponents, modeComponents, aboutComponents, onlineModeComponents, themeComponents;
 
     Container mainMenu(
-        {baseWidth / 2 - 450, baseHeight / 2 - 350},
+        {screenWidth / 2 - 450, screenHeight / 2 - 350},
         {900, 700},
         CONTAINER_COLOR,
         "MAIN MENU",
@@ -2150,7 +2149,7 @@ void mainMenu()
 
     // Mode Selection Container
     Container modeMenu(
-        {baseWidth / 2 - 400, baseHeight / 2 - 300},
+        {screenWidth / 2 - 400, screenHeight / 2 - 300},
         {800, 600},
         CONTAINER_COLOR,
         "MODE SELECTION",
@@ -2183,7 +2182,7 @@ void mainMenu()
     components.push_back(&modeMenu);
 
     // Background setup
-    Background bg({0, 0}, {baseWidth, baseHeight}, BACKGROUND_COLOR);
+    Background bg({0, 0}, {screenWidth, screenHeight}, BACKGROUND_COLOR);
     components.push_back(&bg);
 
     // SCREEN OF THE ABOUT DEVELOPERS
@@ -2191,7 +2190,7 @@ void mainMenu()
     //  string txt, int fontSize, Color textCol,
     //  Color hoverCol, Color pressCol)
     Container aboutDevContainer(
-        {baseWidth / 2 - 450, baseHeight / 2 - 350},
+        {screenWidth / 2 - 450, screenHeight / 2 - 350},
         {900, 700},
         CONTAINER_COLOR,
         "WHO ARE WE?",
@@ -2229,7 +2228,7 @@ void mainMenu()
 
     // ONLINE GAME SETUP
     Container onlineMenu(
-        {baseWidth / 2 - 400, baseHeight / 2 - 300},
+        {screenWidth / 2 - 400, screenHeight / 2 - 300},
         {800, 600},
         CONTAINER_COLOR,
         "ONLINE MODE",
@@ -2258,7 +2257,7 @@ void mainMenu()
 
     // Theme Selection Container
     Container themeMenu(
-        {baseWidth / 2 - 400, baseHeight / 2 - 400},
+        {screenWidth / 2 - 400, screenHeight / 2 - 400},
         {800, 800},
         CONTAINER_COLOR,
         "SELECT THEME",
@@ -2351,8 +2350,8 @@ void mainMenu()
     while (!WindowShouldClose())
     {
 
-        float sx = GetScreenWidth() / (float)baseWidth;
-        float sy = GetScreenHeight() / (float)baseHeight;
+        float sx = GetScreenWidth() / (float)screenWidth;
+        float sy = GetScreenHeight() / (float)screenHeight;
 
         if (GetScreenWidth() > 0 && GetScreenHeight() > 0 &&
             (sx != UIComponent::scaleX || sy != UIComponent::scaleY))
