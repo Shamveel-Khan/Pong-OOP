@@ -40,7 +40,7 @@ int networkInitialize(NetworkMode mode, const char *address, ENetHost **host, EN
     {
         addr.host = ENET_HOST_ANY;
         addr.port = 1234;
-        *host = enet_host_create(&addr, 32, 2, 0, 0);
+        *host = enet_host_create(&addr, 32, 3, 0, 0);
 
         if (!*host)
         {
@@ -59,7 +59,7 @@ int networkInitialize(NetworkMode mode, const char *address, ENetHost **host, EN
     { // Client
         addr.port = 1234;
         enet_address_set_host_ip(&addr, address);
-        *host = enet_host_create(NULL, 1, 2, 0, 0);
+        *host = enet_host_create(NULL, 1, 3, 0, 0);
 
         if (!*host)
         {
@@ -67,7 +67,7 @@ int networkInitialize(NetworkMode mode, const char *address, ENetHost **host, EN
             return 1;
         }
 
-        *peer = enet_host_connect(*host, &addr, 2, 0);
+        *peer = enet_host_connect(*host, &addr, 3, 0);
         if (!*peer)
         {
             fprintf(stderr, "Failed to connect to server.\n");
@@ -101,7 +101,7 @@ int networkSendState(ENetHost *host, ENetPeer *peer, float x, float y, float ser
     sts.y = y;
     sts.serverPaddle = serverPaddle;
     sts.clientPaddle = clientPaddle;
-    ENetPacket *gts = enet_packet_create(&sts, sizeof(state), 0);
+    ENetPacket *gts = enet_packet_create(&sts, sizeof(state), ENET_PACKET_FLAG_RELIABLE);
     if (peer)
     {
         enet_peer_send(peer, 0, gts);
@@ -119,17 +119,18 @@ int networkSendScore(ENetHost *host, ENetPeer *peer, int sl, int sr)
     scores currentScores;
     currentScores.scoreL = sl;
     currentScores.scoreR = sr;
-    ENetPacket *gts = enet_packet_create(&currentScores, sizeof(scores), ENET_PACKET_FLAG_RELIABLE);
+    ENetPacket *gts = enet_packet_create(&currentScores, sizeof(scores), 0);
     if (peer)
     {
-        enet_peer_send(peer, 0, gts);
+        enet_peer_send(peer, 1, gts);
     }
     else
     {
-        enet_host_broadcast(host, 0, gts);
+        enet_host_broadcast(host, 1, gts);
     }
     enet_host_flush(host);
-    cout << "\nSentScore as: "<<sl<<" "<<sr<<endl<<endl;
+    cout << "\nSentScore as: " << sl << " " << sr << endl
+         << endl;
     return 0;
 }
 
@@ -170,7 +171,8 @@ int networkReceiveScores(ENetHost *host, int *sl, int *sr)
             enet_packet_destroy(event.packet);
         }
     }
-    cout<<"\nReceived Scores as : "<<*sl<<" "<<*sr<<endl<<endl;
+    cout << "\nReceived Scores as : " << *sl << " " << *sr << endl
+         << endl;
     return 0;
 }
 
@@ -211,12 +213,12 @@ void sendPause(ENetHost *host, ENetPeer *peer, bool state)
     ENetPacket *pauseMessage = enet_packet_create(&p, sizeof(pauseState), ENET_PACKET_FLAG_RELIABLE);
     if (peer)
     {
-        enet_peer_send(peer, 1, pauseMessage);
+        enet_peer_send(peer, 2, pauseMessage);
         cout << "Sent pause from client as: " << state << endl;
     }
     else
     {
-        enet_host_broadcast(host, 1, pauseMessage);
+        enet_host_broadcast(host, 2, pauseMessage);
         cout << "Sent pause from server as: " << state << endl;
     }
     enet_host_flush(host);
@@ -237,4 +239,29 @@ bool receivePause(ENetHost *host, bool curr)
         enet_packet_destroy(receivePause.packet);
     }
     return curr;
+}
+
+void sendTime(ENetHost *host, int time)
+{
+    int timeN = time;
+    ENetPacket *pauseMessage = enet_packet_create(&timeN, sizeof(timeN), ENET_PACKET_FLAG_RELIABLE);
+    enet_host_broadcast(host, 2, pauseMessage);
+    cout << "Sent time from server as: " << timeN << endl;
+    enet_host_flush(host);
+}
+
+int receiveTime(ENetHost *host, int currentTime)
+{
+    ENetEvent receiveTime;
+    while (enet_host_service(host, &receiveTime, 5))
+    {
+        if (receiveTime.type == ENET_EVENT_TYPE_RECEIVE && receiveTime.packet->dataLength == sizeof(int))
+        {
+            int *timeN = (int *)receiveTime.packet->data;
+            cout << "Received time as: " << *timeN << endl;
+            return *timeN;
+        }
+        enet_packet_destroy(receiveTime.packet);
+    }
+    return currentTime;
 }

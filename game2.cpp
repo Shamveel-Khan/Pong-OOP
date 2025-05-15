@@ -122,8 +122,8 @@ public:
             fontSize = 0.1625 * (screenWidth + screenHeight);
             break;
         }
-        DrawText(TextFormat("%d", scoreRight), posX2, posY, fontSize, scoreColor);
-        DrawText(TextFormat("%d", scoreLeft), posX, posY, fontSize, scoreColor);
+        DrawText(TextFormat("%d", scoreLeft), posX2, posY, fontSize, scoreColor);
+        DrawText(TextFormat("%d", scoreRight), posX, posY, fontSize, scoreColor);
     }
     int *getScore1()
     {
@@ -480,7 +480,6 @@ int runClient(THEMES currTheme, string ipInput)
             *(score.getScore2()) = scoreRight;
         }
 
-        // Pause button interaction
         Vector2 mousePos = GetMousePosition();
         Rectangle button = {(float)screenWidth - 70, 5, 60, 15};
         bool isHover = CheckCollisionPointRec(mousePos, button);

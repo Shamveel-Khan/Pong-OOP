@@ -30,6 +30,8 @@ void sendPause(ENetHost *host, ENetPeer *peer, bool state);
 bool receivePause(ENetHost *host, bool curr);
 int networkReceiveScores(ENetHost *host, int* sl,int* sr);
 int networkSendScore(ENetHost *host, ENetPeer *peer, int sl,int sr);
+int receiveTime(ENetHost *host, int currentTime);
+void sendTime(ENetHost *host, int time);
 
 #ifdef __cplusplus
 }
