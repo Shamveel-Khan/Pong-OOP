@@ -52,7 +52,6 @@ bool checkPauseOffline(bool isHover, Color *buttonColor)
     return isPaused;
 }
 
-// Unified Theme class that replaces themeOffline, themeC, and themeS
 class Theme
 {
     Color ballColor;
@@ -63,7 +62,6 @@ class Theme
     int borderWidth;
 
 public:
-    // Constructor with optional border color parameter
     Theme(Color b, Color ba, Rectangle bou, int bw, string name, Color bo = YELLOW)
         : ballColor(b), background(ba), boundaries(bou), borderWidth(bw), border(bo)
     {
@@ -78,11 +76,10 @@ public:
         UnloadImage(bck);
     }
     
-    // Universal draw method that works for all game modes
     void drawBoard()
     {
         ClearBackground(background);
-        DrawRectangle(0, 0, screenWidth, 25, BLACK); // Top bar
+        DrawRectangle(0, 0, screenWidth, 25, BLACK); 
         DrawRectangleLinesEx(boundaries, borderWidth, border);
         DrawTexture(pic, boundaries.x, boundaries.y, WHITE);
         DrawCircleLines(boundaries.x + boundaries.width / 2, boundaries.y + boundaries.height / 2, 70, WHITE);
@@ -149,7 +146,6 @@ public:
     int *getScore2() { return &scoreRight; }
 };
 
-// Unified Paddle class that replaces paddleOffline, paddleC, and paddleS
 class Paddle
 {
     int height, width, positionX, positionY;
@@ -157,7 +153,6 @@ class Paddle
     Color color;
 
 public:
-    // Constructor with optional color parameter
     Paddle(int x, int y, int h, int w, string name, Color c = WHITE)
         : positionX(x), positionY(y), height(h), width(w), color(c)
     {
@@ -175,16 +170,12 @@ public:
     void setPositionY(int y) { positionY = y; }
     int getPositionY() { return positionY; }
     
-    // Unified draw method with a consistent name
     void draw() { DrawTexture(skin, positionX, positionY, WHITE); }
     
-    // Update method that handles all types of paddle movement logic
     void update(bool isLeftPaddle = true, bool isAIControlled = false, int ballY = 0)
     {
-        // For server paddle - only move if this is the left paddle
         if (!isLeftPaddle && isAIControlled)
         {
-            // AI movement logic (for computer mode)
             int paddleCenter = positionY + height / 2;
             float moveStep = screenHeight * 0.01f;
             
@@ -193,14 +184,14 @@ public:
             else if (paddleCenter > ballY + 5)
                 positionY -= moveStep;
         }
-        else if (positionX < screenWidth / 2 || isLeftPaddle) // Left paddle controls
+        else if (positionX < screenWidth / 2 || isLeftPaddle)
         {
             if (IsKeyDown(KEY_W))
                 positionY -= screenHeight * 0.01f;
             if (IsKeyDown(KEY_S))
                 positionY += screenHeight * 0.01f;
         }
-        else // Right paddle controls (for offline 2-player mode)
+        else
         {
             if (IsKeyDown(KEY_UP))
                 positionY -= screenHeight * 0.01f;
@@ -208,7 +199,6 @@ public:
                 positionY += screenHeight * 0.01f;
         }
         
-        // Common clamping for all paddle types
         positionY = Clamp(positionY, 25.0f, screenHeight - height + 25);
     }
     
@@ -217,7 +207,6 @@ public:
     ~Paddle() { UnloadTexture(skin); }
 };
 
-// Unified Ball class that replaces ballOffline, ballC, and ballS
 class Ball
 {
     int positionX, positionY, radius;
@@ -226,7 +215,6 @@ class Ball
     Texture2D skin;
 
 public:
-    // Constructor with optional color parameter
     Ball(int x, int y, int r, int spdX, int spdY, string name, Color c = WHITE)
         : positionX(x), positionY(y), radius(r), speedX(spdX), speedY(spdY), color(c)
     {
@@ -241,7 +229,6 @@ public:
         UnloadImage(skinImg);
     }
     
-    // Getters and setters
     int getSpeedX() { return speedX; }
     int getSpeedY() { return speedY; }
     int getPositionX() { return positionX; }
@@ -251,10 +238,8 @@ public:
     void setPositionX(int x) { positionX = x; }
     void setPositionY(int y) { positionY = y; }
     
-    // Unified draw method
     void draw() { DrawTexture(skin, positionX - radius, positionY - radius, WHITE); }
     
-    // Universal update method for all game modes
     void update(Rectangle leftRec, Rectangle rightRec, int *score1, int *score2)
     {
         if (positionX + radius >= screenWidth || positionX - radius <= 0)
@@ -305,7 +290,6 @@ bool checkPauseC(bool isHover, Color *buttonColor, ENetPeer *peer, ENetHost *hos
     return isPaused;
 }
 
-// Unified ScoreBoard class that replaces scoreBoardOffline, scoreBoardC, and scoreBoardS
 class ScoreBoard
 {
     int scoreLeft;
@@ -383,9 +367,7 @@ bool checkPauseS(bool isHover, Color *buttonColor, ENetHost *host)
     return isPaused;
 }
 
-// paddleS class removed - Unified Paddle class is used instead
 
-// ballS class removed - Unified Ball class is used instead
 
 const Color TextColor = {132, 132, 132, 255}; // White
 const Color HeadingColor = {26, 37, 37, 255};
@@ -1192,10 +1174,9 @@ int runClient(THEMES currTheme, string ipInput)
     int scoreLeft = 0;
     int scoreRight = 0;
     
-    // Load pause screen
     Image paused = LoadImage("Assets/winningPage/paused.jpg");
     Texture2D pausedTexture = LoadTextureFromImage(paused);
-    UnloadImage(paused);  // Free the source image after creating texture
+    UnloadImage(paused);
 
     while (!WindowShouldClose())
     {
@@ -1215,7 +1196,6 @@ int runClient(THEMES currTheme, string ipInput)
 
             border = {0, 25, (float)screenWidth, (float)screenHeight};
             
-            // Recreate objects with new screen dimensions
             classic.~Theme();
             gameBall.~Ball();
             left.~Paddle();
@@ -1235,7 +1215,6 @@ int runClient(THEMES currTheme, string ipInput)
             *(score.getScore2()) = scoreRight;
         }
 
-        // Pause button interaction
         Vector2 mousePos = GetMousePosition();
         Rectangle button = {(float)screenWidth - 70, 5, 60, 15};
         bool isHover = CheckCollisionPointRec(mousePos, button);
@@ -1257,7 +1236,6 @@ int runClient(THEMES currTheme, string ipInput)
             float ballX, ballY, leftPaddleY, dummy;
             networkReceiveState(host, &ballX, &ballY, &leftPaddleY, &dummy);
             
-            // Check received values are valid before applying them
             if (!(std::isinf(leftPaddleY) || std::isnan(leftPaddleY)) && 
                 !(std::isinf(ballX) || std::isnan(ballX)) && 
                 !(std::isinf(ballY) || std::isnan(ballY)) &&
@@ -1265,7 +1243,6 @@ int runClient(THEMES currTheme, string ipInput)
                 ballY > 0 && ballY < 1 &&
                 leftPaddleY >= 0 && leftPaddleY <= 1)
             {
-                // Convert normalized positions to screen coordinates
                 int newLeftY = leftPaddleY * screenHeight;
                 int newBallX = ballX * screenWidth;
                 int newBallY = ballY * screenHeight;
@@ -1275,7 +1252,6 @@ int runClient(THEMES currTheme, string ipInput)
                 gameBall.setPositionY(newBallY);
             }
 
-            // Update the right paddle based on user input
             right.update(false);
             
             BeginDrawing();
@@ -1313,19 +1289,18 @@ int runClient(THEMES currTheme, string ipInput)
     {
         UnloadTexture(pausedTexture);
         networkShutdown(host);
-        // Determine the winner based on scores
         if (*(score.getScore1()) > *(score.getScore2())) {
-            return 0;  // Left player (client) wins
+            return 0; 
         } else if (*(score.getScore1()) < *(score.getScore2())) {
-            return 1;  // Right player (server) wins
+            return 1;  
         } else {
-            return 2;  // Tie game
+            return 2; 
         }
     }
     
     UnloadTexture(pausedTexture);
     networkShutdown(host);
-    return 3;  // Game was quit without finishing
+    return 3;
 }
 
 // below is run server to run the server
@@ -1392,10 +1367,9 @@ int runServer(THEMES currTheme)
     Rectangle button = {(float)screenWidth - 70, 5, 60, 15};
     Color buttonColor = WHITE;
     
-    // Load pause screen
     Image paused = LoadImage("Assets/winningPage/paused.jpg");
     Texture2D pausedTexture = LoadTextureFromImage(paused);
-    UnloadImage(paused);  // Free the source image after creating texture
+    UnloadImage(paused);  
 
     while (!WindowShouldClose())
     {
@@ -1413,7 +1387,6 @@ int runServer(THEMES currTheme)
             float newballSY = sts.y * ((float)screenHeight / oldSH);
             int newballSRadius = (int)(screenWidth * 0.02f);
 
-            // Clamp ball position within the new screen bounds.
             if (gameBall.getPositionX() < newballSRadius)
                 gameBall.setPositionX(newballSRadius);
             if (gameBall.getPositionX() > screenWidth - newballSRadius)
@@ -1425,7 +1398,6 @@ int runServer(THEMES currTheme)
 
             border = {0, 25, (float)screenWidth, (float)screenHeight};
 
-            // Recreate objects with new screen dimensions
             classic.~Theme();
             gameBall.~Ball();
             left.~Paddle();
@@ -1464,18 +1436,15 @@ int runServer(THEMES currTheme)
             }
             networkReceiveState(host, &dummy.x, &dummy.y, &dummy.p1, &dummy.p2);
             
-            // Apply a proper scaling to the received position
             if (!(std::isinf(dummy.p2) || std::isnan(dummy.p2)) && dummy.p2 >= 0 && dummy.p2 <= 1) {
                 int newRightY = (int)(dummy.p2 * screenHeight);
-                // Apply additional bounds checking
                 newRightY = Clamp(newRightY, 25, screenHeight - right.getRec().height + 25);
                 right.setPositionY(newRightY);
             }
 
             gameBall.update(left.getRec(), right.getRec(), score.getScore1(), score.getScore2());
-            left.update(true);  // Update left paddle (server controls)
+            left.update(true); 
 
-            // Send normalized positions (0-1 range)
             networkSendState(host, NULL, 
                             (float)gameBall.getPositionX() / screenWidth,
                             (float)gameBall.getPositionY() / screenHeight, 
@@ -1516,20 +1485,20 @@ int runServer(THEMES currTheme)
         {
             UnloadTexture(pausedTexture);
             networkShutdown(host);
-            // Determine the winner based on scores
+           
             if (*(score.getScore1()) > *(score.getScore2())) {
-                return 0;  // Left player (server) wins
+                return 0; 
             } else if (*(score.getScore1()) < *(score.getScore2())) {
-                return 1;  // Right player (client) wins
+                return 1; 
             } else {
-                return 2;  // Tie game
+                return 2; 
             }
         }
     }
     
     UnloadTexture(pausedTexture);
     networkShutdown(host);
-    return 3;  // Game was quit without finishing
+    return 3; 
 }
 
 int offlinePong(THEMES currTheme, int robotMode)
@@ -1603,7 +1572,6 @@ int offlinePong(THEMES currTheme, int robotMode)
             int paddleHeight = (int)(screenHeight * 0.165f);
             int paddleWidth = (int)(screenWidth * 0.02f);
             
-            // Recreate objects with new screen dimensions
             classic.~Theme();
             left.~Paddle();
             right.~Paddle();
@@ -1683,23 +1651,19 @@ int offlinePong(THEMES currTheme, int robotMode)
     }
     UnloadTexture(pausedTexture);
     
-    // Determine the winner based on final scores
     if (*(score.getScore1()) > *(score.getScore2())) {
-        return 0;  // Left player wins (Player 1)
+        return 0;  
     } else if (*(score.getScore1()) < *(score.getScore2())) {
-        return 1;  // Right player wins (Player 2 or AI)
+        return 1;  
     } else {
-        return 2;  // Tie game
-    }
+        return 2; 
 }
 
 int winningPage(int endVal, MODES currentMode)
 {
-    // Determine which winning image to display based on the result
     const char* imagePath;
     
     if (currentMode == COMPUTER) {
-        // Computer mode: endVal 0 = computer wins, endVal 1 = player wins, endVal 2 = tie
         if (endVal == 0) {
             imagePath = "Assets/winningPage/playerAi.jpg";  // Computer (AI) wins
         } else if (endVal == 1) {
@@ -1708,7 +1672,6 @@ int winningPage(int endVal, MODES currentMode)
             imagePath = "Assets/winningPage/tie.jpg";       // Tie game
         }
     } else {
-        // Player vs Player (offline) or Online mode
         if (endVal == 0) {
             imagePath = "Assets/winningPage/player1.jpg";   // Player 1 wins
         } else if (endVal == 1) {
@@ -1718,7 +1681,6 @@ int winningPage(int endVal, MODES currentMode)
         }
     }
     
-    // Load the winning image
     Image image = LoadImage(imagePath);
     Texture2D texture = LoadTextureFromImage(image);
     UnloadImage(image);
@@ -1731,7 +1693,6 @@ int winningPage(int endVal, MODES currentMode)
         BeginDrawing();
         ClearBackground((Color){58, 84, 59, 255});
 
-        // Draw the winning image
         DrawTexturePro(
             texture,
             (Rectangle){0, 0, (float)texture.width, (float)texture.height},
@@ -1740,7 +1701,6 @@ int winningPage(int endVal, MODES currentMode)
             0.0f,
             WHITE);
 
-        // Draw instructions for the user
         DrawText("Press H to return to Home", 20, GetScreenHeight() - 60, 20, WHITE);
         DrawText("Press ESC to Quit", 20, GetScreenHeight() - 30, 20, WHITE);
 
