@@ -41,112 +41,32 @@ float Clamp(float value, float min, float max)
 }
 const Color BUTTON_CARMINE = {155, 34, 38, 255};
 
-bool checkPauseOffline(bool isHover, Color *buttonColor)
+// Unified pause check function
+bool checkPause(bool isHover, Color *buttonColor, void *host = nullptr, void *peer = nullptr)
 {
     if (isHover)
         *buttonColor = DARKGRAY;
     else
         *buttonColor = BUTTON_CARMINE;
     if (isHover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+    {
         isPaused = !isPaused;
+        // Send pause update to network if in online mode
+        if (host != nullptr && peer != nullptr)
+        {
+            // Use the network.h function instead of direct enet calls
+            sendPause((ENetHost*)host, (ENetPeer*)peer, isPaused);
+        }
+    }
     return isPaused;
 }
 
-// Unified Theme class that replaces themeOffline, themeC, and themeS
-class Theme
+struct state
 {
-    Color ballColor;
-    Texture2D pic;
-    Color background;
-    Color border;
-    Rectangle boundaries;
-    int borderWidth;
-
-public:
-    // Constructor with optional border color parameter
-    Theme(Color b, Color ba, Rectangle bou, int bw, string name, Color bo = YELLOW)
-        : ballColor(b), background(ba), boundaries(bou), borderWidth(bw), border(bo)
-    {
-        Image bck = LoadImage(name.c_str());
-        if (bck.data == NULL)
-        {
-            cout << "Failed to load background image!" << endl;
-            exit(1);
-        }
-        ImageResize(&bck, bou.width, bou.height);
-        pic = LoadTextureFromImage(bck);
-        UnloadImage(bck);
-    }
-    
-    // Universal draw method that works for all game modes
-    void drawBoard()
-    {
-        ClearBackground(background);
-        DrawRectangle(0, 0, screenWidth, 25, BLACK); // Top bar
-        DrawRectangleLinesEx(boundaries, borderWidth, border);
-        DrawTexture(pic, boundaries.x, boundaries.y, WHITE);
-        DrawCircleLines(boundaries.x + boundaries.width / 2, boundaries.y + boundaries.height / 2, 70, WHITE);
-        DrawLine(screenWidth / 2, boundaries.y, screenWidth / 2, boundaries.y + boundaries.height, WHITE);
-    }
-    
-    int getBorderWidth() { return borderWidth; }
-    Color getBallColor() { return ballColor; }
-    ~Theme() { UnloadTexture(pic); }
-};
-
-class scoreBoardOffline
-{
-    int scoreLeft = 0;
-    int scoreRight = 0;
-
-public:
-    void drawBoard(int choice)
-    {
-        float posX, posX2, posY, fontSize;
-        Color scoreColor;
-        switch (choice)
-        {
-        case 1:
-            posX = 0.175 * screenWidth;
-            posX2 = 0.6875 * screenWidth;
-            posY = 0.375 * screenHeight;
-            scoreColor = (Color){120, 252, 255, 90};
-            fontSize = 0.1625 * (screenWidth + screenHeight);
-            break;
-        case 2:
-            posX = 0.1125 * screenWidth;
-            posX2 = 0.82125 * screenWidth;
-            posY = 0.4575 * screenHeight;
-            scoreColor = (Color){150, 255, 255, 255};
-            fontSize = 0.075 * (screenWidth + screenHeight);
-            break;
-        case 3:
-            posX = 0.1125 * screenWidth;
-            posX2 = 0.82125 * screenWidth;
-            posY = 0.4575 * screenHeight;
-            scoreColor = (Color){124, 252, 0, 255};
-            fontSize = 0.075 * (screenWidth + screenHeight);
-            break;
-        case 4:
-            posX = 0.175 * screenWidth;
-            posX2 = 0.6875 * screenWidth;
-            posY = 0.375 * screenHeight;
-            scoreColor = (Color){255, 172, 28, 255};
-            fontSize = 0.1625 * (screenWidth + screenHeight);
-            break;
-        default:
-            posX = 0.175 * screenWidth;
-            posX2 = 0.6875 * screenWidth;
-            posY = 0.375 * screenHeight;
-            scoreColor = (Color){120, 252, 255, 90};
-            fontSize = 0.1625 * (screenWidth + screenHeight);
-            break;
-        }
-        DrawText(TextFormat("%d", scoreRight), posX2, posY, fontSize, scoreColor);
-        DrawText(TextFormat("%d", scoreLeft), posX, posY, fontSize, scoreColor);
-    }
-    int *getScore1() { return &scoreLeft; }
-    int *getScore2() { return &scoreRight; }
+    float x;
+    float y;
+    float p2;
+    float p1;
 };
 
 // Unified Paddle class that replaces paddleOffline, paddleC, and paddleS
@@ -226,185 +146,57 @@ class Ball
     Texture2D skin;
 
 public:
-    // Constructor with optional color parameter
     Ball(int x, int y, int r, int spdX, int spdY, string name, Color c = WHITE)
         : positionX(x), positionY(y), radius(r), speedX(spdX), speedY(spdY), color(c)
     {
         Image skinImg = LoadImage(name.c_str());
         if (skinImg.data == NULL)
         {
-            cout << "Failed to load ball image!" << endl;
+            cout << "Image was NULL" << endl;
             exit(1);
         }
-        ImageResize(&skinImg, radius * 2, radius * 2);
+        ImageResize(&skinImg, 2 * radius, 2 * radius);
         skin = LoadTextureFromImage(skinImg);
         UnloadImage(skinImg);
     }
-    
-    // Getters and setters
+
     int getSpeedX() { return speedX; }
     int getSpeedY() { return speedY; }
     int getPositionX() { return positionX; }
     int getPositionY() { return positionY; }
     int getRadius() { return radius; }
-    
+
     void setPositionX(int x) { positionX = x; }
     void setPositionY(int y) { positionY = y; }
-    
-    // Unified draw method
+    void setSpeedX(int x) { speedX = x; }
+    void setSpeedY(int y) { speedY = y; }
+
     void draw() { DrawTexture(skin, positionX - radius, positionY - radius, WHITE); }
-    
-    // Universal update method for all game modes
+
+    // Unified update method that handles ball movement and collisions
     void update(Rectangle leftRec, Rectangle rightRec, int *score1, int *score2)
     {
         if (positionX + radius >= screenWidth || positionX - radius <= 0)
         {
-            speedX *= -1;
-            (positionX + radius >= screenWidth) ? (*score2)++ : (*score1)++;
+            if (positionX + radius >= screenWidth)
+                (*score1)++;
+            else
+                (*score2)++;
+            positionX = screenWidth / 2;
+            positionY = screenHeight / 2;
         }
-        
-        if (positionY + radius >= screenHeight + 25 || positionY - radius <= 25)
+        if (positionY + radius >= screenHeight || positionY - radius <= 25)
             speedY *= -1;
-            
-        if (CheckCollisionCircleRec({(float)positionX, (float)positionY}, radius, leftRec) ||
-            CheckCollisionCircleRec({(float)positionX, (float)positionY}, radius, rightRec))
+        if (CheckCollisionCircleRec((Vector2){(float)positionX, (float)positionY}, (float)radius, leftRec) ||
+            CheckCollisionCircleRec((Vector2){(float)positionX, (float)positionY}, (float)radius, rightRec))
             speedX *= -1;
-            
         positionX += speedX;
         positionY += speedY;
     }
-    
+
     ~Ball() { UnloadTexture(skin); }
 };
 
-// the below is for client pong
-
-struct state
-{
-    float x;
-    float y;
-    float p2;
-    float p1;
-};
-
-bool checkPauseC(bool isHover, Color *buttonColor, ENetPeer *peer, ENetHost *host)
-{
-    if (isHover)
-    {
-        *buttonColor = DARKGRAY;
-    }
-    else
-    {
-        *buttonColor = BUTTON_CARMINE;
-    }
-    if (isHover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
-    {
-        isPaused = !isPaused;
-        sendPause(host, peer, isPaused);
-    }
-    return isPaused;
-}
-
-// Unified ScoreBoard class that replaces scoreBoardOffline, scoreBoardC, and scoreBoardS
-class ScoreBoard
-{
-    int scoreLeft;
-    int scoreRight;
-
-public:
-    ScoreBoard() : scoreLeft(0), scoreRight(0) {}
-    
-    void drawBoard(int choice)
-    {
-        float posX, posX2, posY, fontSize;
-        Color scoreColor;
-        switch (choice)
-        {
-        case 1:
-            posX = 0.175 * screenWidth;
-            posX2 = 0.6875 * screenWidth;
-            posY = 0.375 * screenHeight;
-            scoreColor = (Color){120, 252, 255, 90};
-            fontSize = 0.1625 * (screenWidth + screenHeight);
-            break;
-        case 2:
-            posX = 0.1125 * screenWidth;
-            posX2 = 0.82125 * screenWidth;
-            posY = 0.4575 * screenHeight;
-            scoreColor = (Color){150, 255, 255, 255};
-            fontSize = 0.075 * (screenWidth + screenHeight);
-            break;
-        case 3:
-            posX = 0.1125 * screenWidth;
-            posX2 = 0.82125 * screenWidth;
-            posY = 0.4575 * screenHeight;
-            scoreColor = (Color){124, 252, 0, 255};
-            fontSize = 0.075 * (screenWidth + screenHeight);
-            break;
-        case 4:
-            posX = 0.175 * screenWidth;
-            posX2 = 0.6875 * screenWidth;
-            posY = 0.375 * screenHeight;
-            scoreColor = (Color){255, 172, 28, 255};
-            fontSize = 0.1625 * (screenWidth + screenHeight);
-            break;
-        default:
-            posX = 0.175 * screenWidth;
-            posX2 = 0.6875 * screenWidth;
-            posY = 0.375 * screenHeight;
-            scoreColor = (Color){120, 252, 255, 90};
-            fontSize = 0.1625 * (screenWidth + screenHeight);
-            break;
-        }
-        DrawText(TextFormat("%d", scoreRight), posX2, posY, fontSize, scoreColor);
-        DrawText(TextFormat("%d", scoreLeft), posX, posY, fontSize, scoreColor);
-    }
-    
-    int *getScore1() { return &scoreLeft; }
-    int *getScore2() { return &scoreRight; }
-};
-
-// below is for server pong
-bool checkPauseS(bool isHover, Color *buttonColor, ENetHost *host)
-{
-    if (isHover)
-    {
-        *buttonColor = DARKGRAY;
-    }
-    else
-    {
-        *buttonColor = BUTTON_CARMINE;
-    }
-    if (isHover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
-    {
-        isPaused = !isPaused;
-        sendPause(host, NULL, isPaused);
-    }
-    return isPaused;
-}
-
-// paddleS class removed - Unified Paddle class is used instead
-
-// ballS class removed - Unified Ball class is used instead
-
-const Color TextColor = {132, 132, 132, 255}; // White
-const Color HeadingColor = {26, 37, 37, 255};
-const Color BACKGROUND_COLOR = {26, 37, 37, 255};   // #1A2525
-const Color CONTAINER_COLOR = {233, 216, 166, 255}; // #E9D8A6
-const Color BUTTON_ORANGE = {238, 155, 0, 255};
-const Color BUTTON_ORANGE_HOVER = {255, 183, 3, 255};
-const Color BUTTON_ORANGE_PRESSED = {204, 125, 0, 255};
-const Color BUTTON_CERULEAN = {25, 130, 196, 255};
-const Color BUTTON_CERULEAN_HOVER = {45, 150, 216, 255};
-const Color BUTTON_CERULEAN_PRESSED = {15, 110, 166, 255};
-const Color BUTTON_RUST = {187, 62, 3, 255};
-const Color BUTTON_RUST_HOVER = {216, 99, 23, 255};
-const Color BUTTON_RUST_PRESSED = {148, 49, 0, 255};
-const Color BUTTON_CARMINE_HOVER = {186, 58, 62, 255};
-const Color BUTTON_CARMINE_PRESSED = {124, 27, 30, 255};
-const Color BUTTON_FOREST = {34, 139, 34, 255};
-const Color BUTTON_FOREST_HOVER = {54, 159, 54, 255};
-const Color BUTTON_FOREST_PRESSED = {24, 119, 24, 255};
 enum GAMESTATES
 {
     LOBBY,
@@ -415,6 +207,7 @@ enum GAMESTATES
     ABOUT,
     ONLINEGAME // kala kala2
 };
+
 enum THEMES
 {
     THEME1,
@@ -424,12 +217,14 @@ enum THEMES
     THEME5,
     THEME6
 };
+
 enum UI_TYPES
 {
     BUTTON,
     LABEL,
     CONTAINER
 };
+
 enum MODES
 {
     ONLINE,
@@ -521,7 +316,7 @@ Font UIComponent::primaryFont = {0};
 Font UIComponent::secondaryFont = {0};
 bool UIComponent::fontsLoaded = false;
 
-class MenuBall
+class Ball
 {
 private:
     float originalY, originalX;
@@ -532,8 +327,9 @@ private:
     Color color;
 
 public:
-    MenuBall()
+    Ball()
     {
+
         originalY = 100;
         originalX = 50;
         originalRadius = 20;
@@ -541,7 +337,7 @@ public:
         updatePosition();
     }
 
-    MenuBall(float y, float x, float radius, float speed, Color col = WHITE)
+    Ball(float y, float x, float radius, float speed, Color col = WHITE)
     {
         this->originalY = y;
         this->originalRadius = radius;
@@ -553,6 +349,7 @@ public:
 
     void Update()
     {
+
         y += speed;
         if (y - radius <= 0 || y + radius >= ScreenBounds.height)
         {
@@ -996,19 +793,74 @@ public:
     }
 };
 
-// Background Class
-// Modified Background class
+// Animation Ball class (separate from the gameplay Ball class)
+class AnimationBall
+{
+private:
+    float originalY, originalX;
+    float originalRadius, originalSpeed;
+    float y, x;
+    float radius;
+    float speed;
+    Color color;
+
+public:
+    AnimationBall()
+    {
+        originalY = 100;
+        originalX = 50;
+        originalRadius = 20;
+        originalSpeed = 5;
+        updatePosition();
+    }
+
+    AnimationBall(float y, float x, float radius, float speed, Color col = WHITE)
+    {
+        this->originalY = y;
+        this->originalRadius = radius;
+        this->originalSpeed = speed;
+        this->originalX = x;
+        color = col;
+        updatePosition();
+    }
+
+    void Update()
+    {
+        y += speed;
+        if (y - radius <= 0 || y + radius >= ScreenBounds.height)
+        {
+            speed *= -1;
+        }
+    }
+    
+    void updatePosition()
+    {
+        y = roundf(originalY * UIComponent::scaleY);
+        x = roundf(originalX * UIComponent::scaleX);
+        radius = roundf(originalRadius * min(UIComponent::scaleX, UIComponent::scaleY));
+        speed = roundf(originalSpeed * min(UIComponent::scaleX, UIComponent::scaleY));
+    }
+
+    void Draw() const
+    {
+        DrawCircle(static_cast<int>(x), static_cast<int>(y), radius, Fade(color, 0.9f));
+    }
+
+    friend class Background;
+};
+
+// Background Class uses AnimationBall instead of gameplay Ball
 class Background : public UIComponent
 {
 private:
-    MenuBall b1, b2;
+    AnimationBall b1, b2;
 
 public:
     Background(Vector2 pos, Vector2 sz, Color col)
         : UIComponent(pos, sz, col)
     {
-        b1 = MenuBall(20, 300, 20, 10, Color{186, 58, 62, 255});
-        b2 = MenuBall(1020, 1600, 20, 10, Color{255, 183, 3, 255});
+        b1 = AnimationBall(20, 300, 20, 10, Color{186, 58, 62, 255});
+        b2 = AnimationBall(1020, 1600, 20, 10, Color{255, 183, 3, 255});
         type = CONTAINER;
     }
 
@@ -1124,6 +976,107 @@ public:
     }
 };
 
+// Unified Theme class that replaces themeOffline, themeC, and themeS
+class Theme
+{
+    Color ballColor;
+    Texture2D pic;
+    Color background;
+    Color border;
+    Rectangle boundaries;
+    int borderWidth;
+
+public:
+    // Constructor with optional border color parameter
+    Theme(Color b, Color ba, Rectangle bou, int bw, string name, Color bo = YELLOW)
+        : ballColor(b), background(ba), boundaries(bou), borderWidth(bw), border(bo)
+    {
+        Image bck = LoadImage(name.c_str());
+        if (bck.data == NULL)
+        {
+            cout << "Failed to load background image!" << endl;
+            exit(1);
+        }
+        ImageResize(&bck, bou.width, bou.height);
+        pic = LoadTextureFromImage(bck);
+        UnloadImage(bck);
+    }
+    
+    // Universal draw method that works for all game modes
+    void drawBoard()
+    {
+        ClearBackground(background);
+        DrawRectangle(0, 0, screenWidth, 25, BLACK); // Top bar
+        DrawRectangleLinesEx(boundaries, borderWidth, border);
+        DrawTexture(pic, boundaries.x, boundaries.y, WHITE);
+        DrawCircleLines(boundaries.x + boundaries.width / 2, boundaries.y + boundaries.height / 2, 70, WHITE);
+        DrawLine(screenWidth / 2, boundaries.y, screenWidth / 2, boundaries.y + boundaries.height, WHITE);
+    }
+    
+    int getBorderWidth() { return borderWidth; }
+    Color getBallColor() { return ballColor; }
+    ~Theme() { UnloadTexture(pic); }
+};
+
+// Unified ScoreBoard class that replaces scoreBoardOffline, scoreBoardC, and scoreBoardS
+class ScoreBoard
+{
+    int scoreLeft;
+    int scoreRight;
+
+public:
+    ScoreBoard() : scoreLeft(0), scoreRight(0) {}
+    
+    void drawBoard(int choice)
+    {
+        float posX, posX2, posY, fontSize;
+        Color scoreColor;
+        switch (choice)
+        {
+        case 1:
+            posX = 0.175 * screenWidth;
+            posX2 = 0.6875 * screenWidth;
+            posY = 0.375 * screenHeight;
+            scoreColor = (Color){120, 252, 255, 90};
+            fontSize = 0.1625 * (screenWidth + screenHeight);
+            break;
+        case 2:
+            posX = 0.1125 * screenWidth;
+            posX2 = 0.82125 * screenWidth;
+            posY = 0.4575 * screenHeight;
+            scoreColor = (Color){150, 255, 255, 255};
+            fontSize = 0.075 * (screenWidth + screenHeight);
+            break;
+        case 3:
+            posX = 0.1125 * screenWidth;
+            posX2 = 0.82125 * screenWidth;
+            posY = 0.4575 * screenHeight;
+            scoreColor = (Color){124, 252, 0, 255};
+            fontSize = 0.075 * (screenWidth + screenHeight);
+            break;
+        case 4:
+            posX = 0.175 * screenWidth;
+            posX2 = 0.6875 * screenWidth;
+            posY = 0.375 * screenHeight;
+            scoreColor = (Color){255, 172, 28, 255};
+            fontSize = 0.1625 * (screenWidth + screenHeight);
+            break;
+        default:
+            posX = 0.175 * screenWidth;
+            posX2 = 0.6875 * screenWidth;
+            posY = 0.375 * screenHeight;
+            scoreColor = (Color){120, 252, 255, 90};
+            fontSize = 0.1625 * (screenWidth + screenHeight);
+            break;
+        }
+        DrawText(TextFormat("%d", scoreRight), posX2, posY, fontSize, scoreColor);
+        DrawText(TextFormat("%d", scoreLeft), posX, posY, fontSize, scoreColor);
+    }
+    
+    int *getScore1() { return &scoreLeft; }
+    int *getScore2() { return &scoreRight; }
+};
+
 // below is run client to run the client
 int runClient(THEMES currTheme, string ipInput)
 {
@@ -1195,7 +1148,7 @@ int runClient(THEMES currTheme, string ipInput)
     // Load pause screen
     Image paused = LoadImage("Assets/winningPage/paused.jpg");
     Texture2D pausedTexture = LoadTextureFromImage(paused);
-    UnloadImage(paused);  // Free the source image after creating texture
+    UnloadImage(paused);
 
     while (!WindowShouldClose())
     {
@@ -1214,22 +1167,24 @@ int runClient(THEMES currTheme, string ipInput)
             int newballCRadius = (int)(screenWidth * 0.02f);
 
             border = {0, 25, (float)screenWidth, (float)screenHeight};
-            
-            // Recreate objects with new screen dimensions
             classic.~Theme();
             gameBall.~Ball();
             left.~Paddle();
             right.~Paddle();
-            
-            new (&left) Paddle(classic.getBorderWidth() + 5, screenHeight / 2 - (int)(screenHeight * 0.165f / 2), 
-                                 (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode + themePath + "paddle.png");
+            new (&left) Paddle(classic.getBorderWidth() + 5, screenHeight / 2 - (int)(screenHeight * 0.165f / 2),
+                                (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), 
+                                mode + themePath + "paddle.png");
+
             new (&right) Paddle(screenWidth - 30 - (int)(screenWidth * 0.02f), screenHeight / 2 - (int)(screenHeight * 0.165f / 2),
-                               (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), mode + themePath + "paddle.png");
+                                 (int)(screenHeight * 0.165f), (int)(screenWidth * 0.02f), 
+                                 mode + themePath + "paddle.png");
+
             new (&gameBall) Ball((int)newballCX, (int)newballCY, newballCRadius, 
-                                (int)(signSpeedX * screenWidth * 0.007f), (int)(signSpeedY * screenHeight * 0.005f), 
-                                mode + themePath + "ball.png", classic.getBallColor());
+                                   (int)(signSpeedX * screenWidth * 0.007f), 
+                                   (int)(signSpeedY * screenHeight * 0.005f), 
+                                   mode + themePath + "ball.png", classic.getBallColor());
+
             new (&classic) Theme(RED, BLACK, border, 5, mode + themePath + "background.png");
-            
             networkReceiveScores(host, &scoreLeft, &scoreRight);
             *(score.getScore1()) = scoreLeft;
             *(score.getScore2()) = scoreRight;
@@ -1239,7 +1194,7 @@ int runClient(THEMES currTheme, string ipInput)
         Vector2 mousePos = GetMousePosition();
         Rectangle button = {(float)screenWidth - 70, 5, 60, 15};
         bool isHover = CheckCollisionPointRec(mousePos, button);
-        isPaused = checkPauseC(isHover, &buttonColor, peer, host);
+        isPaused = checkPause(isHover, &buttonColor, host, peer);
 
         if (!isPaused)
         {
@@ -1275,9 +1230,7 @@ int runClient(THEMES currTheme, string ipInput)
                 gameBall.setPositionY(newBallY);
             }
 
-            // Update the right paddle based on user input
             right.update(false);
-            
             BeginDrawing();
             classic.drawBoard();
             score.drawBoard(scoreChoice);
@@ -1308,18 +1261,18 @@ int runClient(THEMES currTheme, string ipInput)
             EndDrawing();
         }
         isPaused = receivePause(host, isPaused);
-    }
-    if ((int)frameNo / 60 >= 59)
-    {
-        UnloadTexture(pausedTexture);
-        networkShutdown(host);
-        // Determine the winner based on scores
-        if (*(score.getScore1()) > *(score.getScore2())) {
-            return 0;  // Left player (client) wins
-        } else if (*(score.getScore1()) < *(score.getScore2())) {
-            return 1;  // Right player (server) wins
-        } else {
-            return 2;  // Tie game
+        if ((int)frameNo / 60 >= 59)
+        {
+            UnloadTexture(pausedTexture);
+            networkShutdown(host);
+            // Determine the winner based on scores
+            if (*(score.getScore1()) > *(score.getScore2())) {
+                return 0;  // Left player (client) wins
+            } else if (*(score.getScore1()) < *(score.getScore2())) {
+                return 1;  // Right player (server) wins
+            } else {
+                return 2;  // Tie game
+            }
         }
     }
     
@@ -1445,7 +1398,7 @@ int runServer(THEMES currTheme)
 
         Vector2 pos = GetMousePosition();
         bool isHover = CheckCollisionPointRec(pos, button);
-        isPaused = checkPauseS(isHover, &buttonColor, host);
+        isPaused = checkPause(isHover, &buttonColor, host);
         if(frameNo % 5 == 0) {
             sendTime(host,(int)frameNo/60);
         }
@@ -1582,6 +1535,7 @@ int offlinePong(THEMES currTheme, int robotMode)
     int frameNo = 0;
     Image paused = LoadImage("Assets/winningPage/paused.jpg");
     Texture2D pausedTexture = LoadTextureFromImage(paused);
+    UnloadImage(paused);
 
     while (!WindowShouldClose())
     {
@@ -1614,13 +1568,15 @@ int offlinePong(THEMES currTheme, int robotMode)
             new (&left) Paddle(10, screenHeight / 2 - paddleHeight / 2, paddleHeight, paddleWidth, mode + themePath + "paddle.png");
             new (&right) Paddle(screenWidth - 30 - paddleWidth, screenHeight / 2 - paddleHeight / 2, paddleHeight, paddleWidth, mode + themePath + "paddle.png");
             new (&gameBall) Ball(newBallX, newBallY, newBallRadius, 
-                                (int)(signSpeedX * screenWidth * 0.007f), (int)(signSpeedY * screenHeight * 0.005f), mode + themePath + "ball.png");
+                               (int)(signSpeedX * screenWidth * 0.007f), 
+                               (int)(signSpeedY * screenHeight * 0.005f), 
+                               mode + themePath + "ball.png");
             button = {(float)screenWidth - 70, 5, 60, 15};
         }
 
         Vector2 pos = GetMousePosition();
         bool isHover = CheckCollisionPointRec(pos, button);
-        isPaused = checkPauseOffline(isHover, &buttonColor);
+        isPaused = checkPause(isHover, &buttonColor);
 
         if (!isPaused)
         {
@@ -2077,7 +2033,7 @@ void mainMenu()
             else if (currentMode == COMPUTER)
             {
                 endVal = offlinePong(currentTheme, 0);
-            replayVal = winningPage(endVal, currentMode);
+                replayVal = winningPage(endVal, currentMode);
             }
             else if (currentMode == ONLINE)
             {
@@ -2114,9 +2070,9 @@ void mainMenu()
             {
                 int endVal;
                 if (!isServer) {
-                endVal = runClient(currentTheme, globalIPInput->getText());
+                    endVal = runClient(currentTheme, globalIPInput->getText());
                 } else {
-                endVal = runServer(currentTheme);
+                    endVal = runServer(currentTheme);
                 }
                 
                 // Only show winning screen if the game completed naturally
