@@ -8,7 +8,6 @@
 #include <iostream>
 using namespace std;
 
-// Structure for game state
 typedef struct
 {
     float x;

@@ -30,7 +30,6 @@ typedef struct
     int scoreR;
 } scores;
 
-// below is for pong offline:
 float Clamp(float value, float min, float max)
 {
     if (value < min)
@@ -47,7 +46,7 @@ bool checkPauseOffline(bool isHover, Color *buttonColor)
         *buttonColor = DARKGRAY;
     else
         *buttonColor = BUTTON_CARMINE;
-    if (isHover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+    if ((isHover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) || IsKeyPressed(KEY_P))
         isPaused = !isPaused;
     return isPaused;
 }
@@ -262,7 +261,6 @@ public:
     ~Ball() { UnloadTexture(skin); }
 };
 
-// the below is for client pong
 
 struct state
 {
@@ -282,7 +280,7 @@ bool checkPauseC(bool isHover, Color *buttonColor, ENetPeer *peer, ENetHost *hos
     {
         *buttonColor = BUTTON_CARMINE;
     }
-    if (isHover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+    if ((isHover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) || IsKeyPressed(KEY_P))
     {
         isPaused = !isPaused;
         sendPause(host, peer, isPaused);
@@ -359,7 +357,7 @@ bool checkPauseS(bool isHover, Color *buttonColor, ENetHost *host)
     {
         *buttonColor = BUTTON_CARMINE;
     }
-    if (isHover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+    if ((isHover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) || IsKeyPressed(KEY_P))
     {
         isPaused = !isPaused;
         sendPause(host, NULL, isPaused);
@@ -1106,7 +1104,6 @@ public:
     }
 };
 
-// below is run client to run the client
 int runClient(THEMES currTheme, string ipInput)
 {
     string ip = ipInput;
@@ -1180,7 +1177,6 @@ int runClient(THEMES currTheme, string ipInput)
 
     while (!WindowShouldClose())
     {
-        // Handle window resize
         if (IsWindowResized() || !frameNo)
         {
             oldSW = screenWidth;
@@ -1658,26 +1654,26 @@ int offlinePong(THEMES currTheme, int robotMode)
     } else {
         return 2; 
 }
-
+}
 int winningPage(int endVal, MODES currentMode)
 {
     const char* imagePath;
     
     if (currentMode == COMPUTER) {
         if (endVal == 0) {
-            imagePath = "Assets/winningPage/playerAi.jpg";  // Computer (AI) wins
+            imagePath = "Assets/winningPage/playerAi.jpg"; 
         } else if (endVal == 1) {
-            imagePath = "Assets/winningPage/player1.jpg";   // Human player wins
+            imagePath = "Assets/winningPage/player1.jpg";  
         } else {
-            imagePath = "Assets/winningPage/tie.jpg";       // Tie game
+            imagePath = "Assets/winningPage/tie.jpg";    
         }
     } else {
-        if (endVal == 0) {
-            imagePath = "Assets/winningPage/player1.jpg";   // Player 1 wins
-        } else if (endVal == 1) {
-            imagePath = "Assets/winningPage/player2.jpg";   // Player 2 wins
+        if (endVal == 1) {
+            imagePath = "Assets/winningPage/player1.jpg";  
+        } else if (endVal == 0) {
+            imagePath = "Assets/winningPage/player2.jpg";   
         } else {
-            imagePath = "Assets/winningPage/tie.jpg";       // Tie game
+            imagePath = "Assets/winningPage/tie.jpg";     
         }
     }
     
@@ -1977,7 +1973,7 @@ void mainMenu()
     themeComponents.push_back(&themeMenu);
     components.push_back(&themeMenu);
     int flag = 1;
-    // Main loop
+
     while (!WindowShouldClose())
     {
 
@@ -2041,7 +2037,7 @@ void mainMenu()
             }
             else if (currentMode == ONLINE)
             {
-                replayVal = 1;  // Default to return home for online mode
+                replayVal = 1; 
             }
 
             if (replayVal)
@@ -2075,20 +2071,19 @@ void mainMenu()
                 int endVal;
                 if (!isServer) {
                 endVal = runClient(currentTheme, globalIPInput->getText());
-                } else {
+                } 
+                else {
                 endVal = runServer(currentTheme);
                 }
-                
-                // Only show winning screen if the game completed naturally
                 if (endVal >= 0 && endVal <= 2) {
                     int replayVal = winningPage(endVal, currentMode);
                     if (replayVal) {
                         currentState = LOBBY;
-                    } else {
+                    } 
+                    else {
                         return;
                     }
                 } else {
-                    // Game was quit before finishing
                     currentState = LOBBY;
                 }
                 
