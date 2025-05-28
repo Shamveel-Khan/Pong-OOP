@@ -6,8 +6,7 @@ Welcome to the Pong Game in Raylib! 🚀 This is a modern take on the classic Po
 
 - **Multiple Themes**: Change the visual theme of the game (e.g., neon, retro, dark mode). 🌈
 - **Paddle Skins**: Customize your paddle with different skins and colors. 🛶
-- **Interface Customization**: Modify the UI to fit your preferred style, including scoreboards, menus, and more. 🎨
-- **Achievements**: Unlock achievements by completing in-game challenges (e.g., 10 wins, 100 rallies). 🏅
+- **Interface Customization**: Modify the UI to fit your preferred style, menus, and more. 🎨
 - **Multiplayer Support**: Compete with friends or players online in real-time matches. 🌍
 - **Classes**:
   - **Ball**: The bouncing ball that players control and aim to hit past their opponent. ⚽
@@ -17,4 +16,4 @@ Welcome to the Pong Game in Raylib! 🚀 This is a modern take on the classic Po
 
 - **Raylib**: This game is built using Raylib, a simple and easy-to-use C library for game development. 🖥️
 - **C Compiler**: Make sure you have a C compiler set up (e.g., GCC or Clang). 🔧
-- **Network Library**: To be decided. 🌐
+- **Network Library**: ENET 🌐
