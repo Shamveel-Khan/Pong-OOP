@@ -17,4 +17,4 @@ Welcome to the Pong Game in Raylib! 🚀 This is a modern take on the classic Po
 
 - **Raylib**: This game is built using Raylib, a simple and easy-to-use C library for game development. 🖥️
 - **C Compiler**: Make sure you have a C compiler set up (e.g., GCC or Clang). 🔧
-- **Network Library**: To be decided. 🌐
+- **Network Library**: ENET 🌐
